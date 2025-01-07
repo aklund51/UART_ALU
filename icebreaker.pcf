@@ -1,0 +1,10 @@
+## Board Clock: 12 MHz
+set_frequency  clk_12mhz_i             12
+set_io -nowarn clk_12mhz_i             35
+
+# RS232
+set_io -nowarn RX_i                6
+set_io -nowarn TX_o                9
+
+# Buttons
+set_io -nowarn reset_unsafe_i      10
