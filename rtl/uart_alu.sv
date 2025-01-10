@@ -1,43 +1,72 @@
-module uart_alu (
-    input clk_12mhz_i,
-    input reset_unsafe_i,
-    input RX_i,
-    output TX_o
+module uart_alu 
+#(parameter DATA_WIDTH = 8)
+(
+    input wire clk_12mhz_i,
+    input wire reset_unsafe_i,
+
+    // UART Interface
+    input wire RX_i,
+    output wire TX_o,
+
+    // AXI Input
+    input wire [DATA_WIDTH-1:0] s_axis_tdata,
+    input wire                  s_axis_tvalid,
+    input wire                  s_axis_tready,
+
+    // AXI Output
+    output wire [DATA_WIDTH-1:0] m_axis_tdata,
+    output wire                  m_axis_tvalid,
+    input wire                   m_axis_tready,
+
+    // Status
+    output wire tx_busy,
+    output wire rx_busy,
+    output wire rx_overrun_error,
+    output wire rx_frame_error,
+
+    // Configuration
+    input wire [15:0] prescale
 );
 
 
     uart_rx
+    #(DATA_WIDTH(DATA_WIDTH))
     uart_rx_inst
     (
-    input  wire                   clk,
-    input  wire                   rst,
+    .clk(clk_12mhz_i)
+    ,.rst(reset_unsafe_i)
 
-    /*
-     * AXI output
-     */
-    output wire [DATA_WIDTH-1:0]  m_axis_tdata,
-    output wire                   m_axis_tvalid,
-    input  wire                   m_axis_tready,
+    ,.m_axis_tdata(m_axis_tdata)
+    ,.m_axis_tvalid(m_axis_tvalid)
+    ,.m_axis_tready(m_axis_tready)
 
-    /*
-     * UART interface
-     */
-    input  wire                   rxd,
+    ,.rxd(RX_i)
 
-    /*
-     * Status
-     */
-    output wire                   busy,
-    output wire                   overrun_error,
-    output wire                   frame_error,
+    ,.busy(rx_busy)
+    ,.overrun_error(rx_overrun_error)
+    ,.frame_error(rx_frame_error)
 
-    /*
-     * Configuration
-     */
-    input  wire [15:0]            prescale
+    ,.prescale(12'd1250)
 
 );
 
+    uart_tx
+    #(.DATA_WIDTH(DATA_WIDTH))
+    uart_tx_inst
+    (
+        .clk(clk_12mhz_i)
+        ,.rst(reset_unsafe_i)
+
+        ,.s_axis_tdata(s_axis_tdata)
+        ,.s_axis_tvalid(s_axis_tvalid)
+        ,.s_axis_tready(s_axis_tready)
+
+        ,.txd(TX_o)
+
+        ,.busy(tx_busy)
+
+        ,.prescale(12'd1250)
+    );
 
     
 endmodule
