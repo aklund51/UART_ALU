@@ -1,8 +1,11 @@
 # https://github.com/YosysHQ/icestorm/blob/master/examples/icebreaker/icebreaker.pcf
 
 # 12 MHz clock
-set_io -nowarn CLK        35
+set_io -nowarn clk_i        35
 
-# LEDs and Button
-set_io -nowarn BTN_N      10
-set_io -nowarn LEDG_N     37
+# RS232
+set_io -nowarn RX_i                6
+set_io -nowarn TX_o                9
+
+# Buttons
+set_io -nowarn reset_unsafe_i      10
