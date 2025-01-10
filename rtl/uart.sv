@@ -38,7 +38,7 @@ module uart
     ,.rst(reset_i)
 
     ,.m_axis_tdata(m_axis_tdata)
-    ,.m_axis_tvalid(m_axis_tvalid)
+    ,.m_axis_tvalid(m_axis_tvalid) 
     ,.m_axis_tready(m_axis_tready)
 
     ,.rxd(RX_i)
@@ -59,7 +59,7 @@ module uart
         ,.rst(reset_i)
 
         ,.s_axis_tdata(s_axis_tdata)
-        ,.s_axis_tvalid(s_axis_tvalid)
+        ,.s_axis_tvalid(s_axis_tvalid) 
         ,.s_axis_tready(s_axis_tready)
 
         ,.txd(TX_o)
