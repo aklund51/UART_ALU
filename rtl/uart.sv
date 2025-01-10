@@ -35,7 +35,7 @@ module uart
     uart_rx_inst
     (
     .clk(clk_12mhz_i)
-    ,.rst(reset_unsafe_i)
+    ,.rst(reset_i)
 
     ,.m_axis_tdata(m_axis_tdata)
     ,.m_axis_tvalid(m_axis_tvalid)
@@ -56,7 +56,7 @@ module uart
     uart_tx_inst
     (
         .clk(clk_12mhz_i)
-        ,.rst(reset_unsafe_i)
+        ,.rst(reset_i)
 
         ,.s_axis_tdata(s_axis_tdata)
         ,.s_axis_tvalid(s_axis_tvalid)
