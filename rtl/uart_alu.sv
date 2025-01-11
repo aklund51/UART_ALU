@@ -21,6 +21,7 @@ module uart_alu (
 
 
     uart
+    #(.DATA_WIDTH(8))
     uart_inst
     (.clk_i(clk_i),
     .reset_i(reset_l),

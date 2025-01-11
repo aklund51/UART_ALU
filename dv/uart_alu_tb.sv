@@ -15,8 +15,9 @@ always begin
 
     uart_alu_runner.reset();
 
-    repeat(4) begin
-        // call tasks
+    repeat(1) begin 
+        uart_alu_runner.sendByte();
+        uart_alu_runner.waitForEcho();
     end
 
     $display( "End simulation." );
