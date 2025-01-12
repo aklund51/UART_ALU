@@ -3,23 +3,20 @@ module uart_alu_runner;
 
 // Inputs
 logic clk_i;
-logic rst_ni;
+logic rst_ni = 0;
 logic RX_i;
-logic [7:0] s_axis_tdata;
-logic s_axis_tready, s_axis_tvalid;
-logic m_axis_tready;
-logic [15:0] prescale;
+logic [7:0] s_axis_tdata = 0;
+logic s_axis_tvalid = 0;
+logic m_axis_tready = 0;
+logic [15:0] prescale = 12'd1250;
 
 logic [31:0] itervar;
 
 // Outputs
 wire TX_o;
+wire s_axis_tready;
 wire [7:0] m_axis_tdata;
 wire m_axis_tvalid;
-wire tx_busy, rx_busy, rx_frame_error, rx_overrun_error;
-
-
-// logic led_o;
 
 localparam realtime ClockPeriod = 5ms;
 
@@ -32,29 +29,10 @@ initial begin
 end
 
 
-uart
-#(.DATA_WIDTH(8))
-uart_dut_inst
-(
-    // Inputs
-    .clk_i(clk_i),
-    .reset_i(rst_ni),
-    .RX_i(RX_i),
-    .s_axis_tdata(s_axis_tdata),
-    .s_axis_tvalid(s_axis_tvalid),
-    .s_axis_tready(s_axis_tready),
-    .m_axis_tready(m_axis_tready),
-    .prescale(prescale),
-
-    // Outputs
-    .TX_o(TX_o),
-    .m_axis_tdata(m_axis_tdata),
-    .m_axis_tvalid(m_axis_tvalid),
-    .tx_busy(tx_busy),
-    .rx_busy(rx_busy),
-    .rx_frame_error(rx_busy),
-    .rx_overrun_error(rx_overrun_error)
-);
+uart uart (.*);
+logic [7:0] byte_received;
+logic ready_lo;
+logic transmit;
 
 task automatic reset;
     rst_ni <= 0;
@@ -64,43 +42,40 @@ task automatic reset;
     rst_ni <= 0;
 endtask
 
-task automatic sendByte;
+
+
+task automatic sendByte(logic [7:0] byte_sent);
+    s_axis_tvalid <= 1'b1;
+    s_axis_tdata <= byte_sent;
+    ready_lo <= s_axis_tready;
+    transmit <= 1'b0;
+
     @(posedge clk_i);
-    itervar = 0;
-    s_axis_tdata = 8'b10101010;
-    s_axis_tready = 1'b1;
-    s_axis_tvalid = 1'b1;
-    m_axis_tready = 1'b1;
-    prescale = 12'd1250;
-    #(prescale * 8 * 10); // Wait 1 bit time
-
-    // Start bit
-    RX_i = 1'b0;
-    
-    for (itervar = 0; itervar < 8; itervar++) begin
-        RX_i = s_axis_tdata[itervar];
-        #(prescale * 8 *10); // Wait 1 bit time
+    while (!ready_lo) begin
+        @(posedge clk_i);
+        ready_lo <= (s_axis_tready && s_axis_tvalid);
     end
 
-    // Stop bit
-    RX_i = 1'b1;
-    #(prescale * 16 * 10); // Wait 1 bit time
-    s_axis_tvalid = 1'b0;
-endtask
+    s_axis_tvalid <= 0;
+    ready_lo <= 0;
+    m_axis_tready <= 1;
+    transmit <= m_axis_tvalid;
+    byte_received <= m_axis_tdata;
+    s_axis_tdata <= 0;
 
-
-task automatic waitForEcho;
-    begin
-        wait(TX_o == 0); // Wait for start bit, never arrives as of now
-        #(prescale * 8 * 10); // Wait for data to finish
+    @(posedge clk_i);
+    while (!transmit) begin
+        transmit <= (m_axis_tready && m_axis_tvalid);
+        byte_received <= m_axis_tdata;
+        @(posedge clk_i);
     end
-endtask
 
+    s_axis_tvalid <= 0;
+    ready_lo <= 0;
+    transmit <= 0;
+    m_axis_tready <= 0;
 
-/*
-task automatic task_2;
-    // perform task @(some signal high/low)
+    assert(byte_received == byte_sent);
 endtask
-*/
 
 endmodule

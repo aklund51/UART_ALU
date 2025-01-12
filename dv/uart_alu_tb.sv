@@ -16,8 +16,11 @@ always begin
     uart_alu_runner.reset();
 
     repeat(1) begin 
-        uart_alu_runner.sendByte();
-        uart_alu_runner.waitForEcho();
+        uart_alu_runner.sendByte(8'h10);
+        uart_alu_runner.sendByte(8'h01);
+        uart_alu_runner.sendByte(8'h30);
+        uart_alu_runner.sendByte(8'h24);
+        uart_alu_runner.sendByte(8'h11);
     end
 
     $display( "End simulation." );
