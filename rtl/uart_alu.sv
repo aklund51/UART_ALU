@@ -33,12 +33,6 @@ module uart_alu (
     .m_axis_tvalid(m_axis_tvalid_w),
     .m_axis_tready(s_axis_tready_w),
 
-    // Status
-    .tx_busy(),
-    .rx_busy(),
-    .rx_overrun_error(),
-    .rx_frame_error(),
-
     // Configuration
     .prescale(prescale_lp)
 );

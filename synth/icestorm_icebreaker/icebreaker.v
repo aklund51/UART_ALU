@@ -37,7 +37,7 @@ module icebreaker (
 uart_alu 
 uart_alu_inst(
     .clk_i(clk_i),
-    .reset_i(reset_l),
+    .reset_i(reset_unsafe_i),
     .RX_i(RX_i),
     .TX_o(TX_o));
 
