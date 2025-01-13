@@ -2,23 +2,22 @@
 
 module uart_alu (
     input clk_i,
-    input reset_unsafe_i,
+    input reset_i,
     input RX_i,
     output TX_o
 );
+
     localparam prescale_lp = 1250;
+
+    logic [0:0] reset_l;
     
     wire [7:0] axis_tdata_w;
     wire [0:0] m_axis_tvalid_w;
     wire [0:0] s_axis_tready_w;
-    logic [0:0] reset_l;
 
-
-    // reset to be used in synchronous design
-    always_ff @(posedge clk_i) begin 
-        reset_l <= reset_unsafe_i;
+    always_ff @(posedge clk_i) begin
+        reset_l <= reset_i;
     end
-
 
     uart
     uart_inst

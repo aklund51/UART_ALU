@@ -13,7 +13,7 @@ always begin
     $urandom(100);
     $timeformat( -3, 3, "ms", 0);
 
-    uart_alu_runner.reset();
+    // uart_alu_runner.reset();
 
     repeat(4) begin
         // call tasks

@@ -1,12 +1,13 @@
-import serial # if not intalled run: pip install pyserial
+import serial
 
 def main():
-    usb_port = "/dev/ttyUSB0"  # Change this to your USB device path
+    # Specify the USB port and baud rate
+    usb_port = "/dev/tty.usbserial-ib0RDpMt0"  # Change this to your USB device path
     baud_rate = 9600  # Adjust this to match your device's configuration
 
     try:
         # Open the serial connection
-        with serial.Serial(usb_port, baud_rate, timeout=1) as ser:
+        with serial.Serial(usb_port, baud_rate, timeout=None) as ser:
             print(f"Connected to {usb_port} at {baud_rate} baud")
 
             while True:
@@ -24,7 +25,7 @@ def main():
                 # Send the character to the USB device
                 ser.write(user_input.encode('utf-8'))
 
-                # Read the response from the device
+                # Wait for and read the response from the device
                 response = ser.readline().decode('utf-8').strip()
                 
                 if response:
@@ -37,4 +38,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
