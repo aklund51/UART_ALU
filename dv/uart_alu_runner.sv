@@ -1,4 +1,4 @@
-//`timescale 1ns/1ps
+`timescale 1ns/1ps
 module uart_alu_runner;
 
 // Inputs
@@ -8,9 +8,8 @@ logic RX_i;
 logic [7:0] s_axis_tdata = 0;
 logic s_axis_tvalid = 0;
 logic m_axis_tready = 0;
-logic [15:0] prescale = 12'd1250;
+logic [15:0] prescale = 16'd1250;
 
-logic [31:0] itervar;
 
 // Outputs
 wire TX_o;
@@ -41,7 +40,6 @@ task automatic reset;
     @(posedge clk_i);
     rst_ni <= 0;
 endtask
-
 
 
 task automatic sendByte(logic [7:0] byte_sent);

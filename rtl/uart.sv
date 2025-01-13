@@ -40,7 +40,7 @@ module uart
     ,.m_axis_tvalid(m_axis_tvalid) 
     ,.m_axis_tready(m_axis_tready)
 
-    ,.rxd(TX_o)
+    ,.rxd(RX_i)
 
     ,.busy()
     ,.overrun_error()
