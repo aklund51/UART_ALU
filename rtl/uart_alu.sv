@@ -26,13 +26,14 @@ module uart_alu (
     .rst_ni(reset_l),
     .RX_i(RX_i),
     .TX_o(TX_o),
+    /*
     .s_axis_tdata(axis_tdata_w),
     .s_axis_tvalid(m_axis_tvalid_w),
     .s_axis_tready(s_axis_tready_w),
     .m_axis_tdata(axis_tdata_w),
     .m_axis_tvalid(m_axis_tvalid_w),
     .m_axis_tready(s_axis_tready_w),
-
+    */
     // Configuration
     .prescale(prescale_lp)
 );
