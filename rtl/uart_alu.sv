@@ -20,9 +20,10 @@ module uart_alu (
     end
 
     uart
+    #(.DATA_WIDTH(8))
     uart_inst
     (.clk_i(clk_i),
-    .reset_i(reset_l),
+    .rst_ni(reset_l),
     .RX_i(RX_i),
     .TX_o(TX_o),
     .s_axis_tdata(axis_tdata_w),
