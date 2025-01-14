@@ -34,7 +34,7 @@ module icebreaker (
 // );
 
 wire clk_12 = clk_i;
-wire clk_48;
+wire clk_31;
 
 // icepll -i 12 -o 31.5
 SB_PLL40_PAD #(
@@ -48,12 +48,12 @@ SB_PLL40_PAD #(
     .RESETB(1'b1),
     .BYPASS(1'b0),
     .PACKAGEPIN(clk_12),
-    .PLLOUTCORE(clk_48)
+    .PLLOUTCORE(clk_31)
 );
 
 uart_alu 
 uart_alu_inst(
-    .clk_i(clk_48),
+    .clk_i(clk_31),
     .reset_i(reset_unsafe_i),
     .RX_i(RX_i),
     .TX_o(TX_o),
