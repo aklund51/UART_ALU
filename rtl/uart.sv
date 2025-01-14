@@ -1,147 +1,63 @@
-/*
 `timescale 1ns / 1ps
 
-module uart
-#(parameter DATA_WIDTH = 8
- )
+module uart #(
+    parameter DATA_WIDTH = 8
+)
 (
-    input wire clk_i,
-    input wire rst_ni,
+    input                   clk_i,
+    input                   rst_ni,
 
-    // UART Interface
-    input wire RX_i,
-    output wire TX_o,
+    input [DATA_WIDTH-1:0]  s_axis_tdata,
+    input                   s_axis_tvalid,
+    output                  s_axis_tready,
 
-    
-    // AXI input
-    input  wire [DATA_WIDTH-1:0]  s_axis_tdata,
-    input  wire                   s_axis_tvalid,
-    output wire                   s_axis_tready,
+    output [DATA_WIDTH-1:0]  m_axis_tdata,
+    output                   m_axis_tvalid,
+    input                    m_axis_tready,
 
+    input                    RX_i,
+    output                   TX_o,
 
-    // AXI output
-    output wire [DATA_WIDTH-1:0]  m_axis_tdata,
-    output wire                   m_axis_tvalid,
-    input  wire                   m_axis_tready,
-
-    input wire [15:0] prescale
+    input [15:0]             prescale
 
 );
 
-
-    uart_rx
-    #(.DATA_WIDTH(DATA_WIDTH))
-    uart_rx_inst
-    (
-    .clk(clk_i)
-    ,.rst(rst_ni)
-
-    ,.m_axis_tdata(m_axis_tdata)
-    ,.m_axis_tvalid(m_axis_tvalid) 
-    ,.m_axis_tready(m_axis_tready)
-
-    ,.rxd(RX_i)
-
-    ,.busy()
-    ,.overrun_error()
-    ,.frame_error()
-
-    ,.prescale(prescale)
-
+uart_tx #(
+    .DATA_WIDTH(DATA_WIDTH)
+)
+uart_tx_inst (
+    .clk(clk_i),
+    .rst(rst_ni),
+    // axi input
+    .s_axis_tdata(s_axis_tdata),
+    .s_axis_tvalid(s_axis_tvalid),
+    .s_axis_tready(s_axis_tready),
+    // output
+    .txd(TX_o),
+    // status
+    .busy(),
+    // configuration
+    .prescale(prescale)
 );
 
-    uart_tx
-    #(.DATA_WIDTH(DATA_WIDTH))
-    uart_tx_inst
-    (
-        .clk(clk_i)
-        ,.rst(rst_ni)
-
-        ,.s_axis_tdata(s_axis_tdata)
-        ,.s_axis_tvalid(s_axis_tvalid) 
-        ,.s_axis_tready(s_axis_tready)
-
-        ,.txd(TX_o)
-
-        ,.busy()
-
-        ,.prescale(prescale)
-    );
-
-    
-endmodule
-*/
-
-
-`timescale 1ns / 1ps
-
-module uart
-#(parameter DATA_WIDTH = 8
- )
-(
-    input wire clk_i,
-    input wire rst_ni,
-
-    // UART Interface
-    input wire RX_i,
-    output wire TX_o,
-
-    input wire [15:0] prescale
+uart_rx #(
+    .DATA_WIDTH(DATA_WIDTH)
+)
+uart_rx_inst (
+    .clk(clk_i),
+    .rst(rst_ni),
+    // axi output
+    .m_axis_tdata(m_axis_tdata),
+    .m_axis_tvalid(m_axis_tvalid),
+    .m_axis_tready(m_axis_tready),
+    // input
+    .rxd(RX_i),
+    // status
+    .busy(),
+    .overrun_error(),
+    .frame_error(),
+    // configuration
+    .prescale(prescale)
 );
 
-    // AXI input
-    //wire [DATA_WIDTH-1:0]  s_axis_tdata;
-    wire [DATA_WIDTH-1:0] data;
-    wire ready, valid;
-    
-    //wire                   s_axis_tvalid,
-    //wire                   s_axis_tready,
-    
-
-
-    // AXI output
-    //wire [DATA_WIDTH-1:0]  m_axis_tdata;
-    
-    //wire                   m_axis_tvalid,
-    //wire                   m_axis_tready,
-    
-    uart_rx
-    #(.DATA_WIDTH(DATA_WIDTH))
-    uart_rx_inst
-    (
-    .clk(clk_i)
-    ,.rst(rst_ni)
-
-    ,.m_axis_tdata(data)
-    ,.m_axis_tvalid(valid) 
-    ,.m_axis_tready(ready)
-
-    ,.rxd(RX_i)
-
-    ,.busy()
-    ,.overrun_error()
-    ,.frame_error()
-
-    ,.prescale(prescale)
-    );
-
-    uart_tx
-    #(.DATA_WIDTH(DATA_WIDTH))
-    uart_tx_inst
-    (
-        .clk(clk_i)
-        ,.rst(rst_ni)
-
-        ,.s_axis_tdata(data)
-        ,.s_axis_tvalid(valid) 
-        ,.s_axis_tready(ready)
-
-        ,.txd(TX_o)
-
-        ,.busy()
-
-        ,.prescale(prescale)
-    );
-
-    
 endmodule
