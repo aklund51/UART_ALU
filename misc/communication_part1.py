@@ -15,21 +15,23 @@ def create_packet(opcode, data):
     packet = bytearray([opcode, RESERVED, lsb_len, msb_len]) + data
     return packet
 
-
 def echo(ser, message):
-     data = bytearray(message.encode('utf-8'))
-     packet = create_packet(ECHO_OPCODE, data)
-     ser.write(packet)
-     print(f"Sent packet: {packet.hex()}")
+    data = bytearray(message.encode('utf-8'))
+    packet = create_packet(ECHO_OPCODE, data)
+    ser.write(packet)
+    print(f"Sent packet: {packet.hex()}")
 
-
-def read_data(ser):
+def read_data(ser, expected_data=None):
     while True:
         if ser.in_waiting:
             received = ser.read(ser.in_waiting)
             print(f"Received (hex): {received.hex()}")
+            if expected_data:
+                if received == expected_data:
+                    print("PASS: Echo response matches sent data")
+                else:
+                    print("FAIL: Echo response does not match sent data")
         time.sleep(0.1)
-
 
 def main():
     # Specify the USB port and baud rate
@@ -45,22 +47,18 @@ def main():
             read_thread = threading.Thread(target=read_data, args=(ser,), daemon=True)
             read_thread.start()
 
-            time.sleep(1)
-
+            # Echo test
             echo_tests = [
-                "", # empty message test
-                "Hi",
-                "testing testing",
-                "maroon 5 test"
+                "",            
+                "Testing 123",   
+                "testing testing",        
+                "!@#$"  
             ]
 
             for test in echo_tests:
-                packet = create_packet(ECHO_OPCODE, bytearray(test.encode('utf-8')))
-                print(f"\nSent packet: {packet.hex()}")
-                print(f"Data: {test}")
-                ser.write(packet)
-                time.sleep(1)
-
+                print(f"\nTesting echo with message: '{test}'")
+                echo(ser, test)
+                time.sleep(1)  # Allow time for echo response
 
     except serial.SerialException as e:
         print(f"Error: {e}")
