@@ -1,4 +1,3 @@
-
 module icebreaker (
     input  wire clk_i,
     input  wire reset_unsafe_i,

@@ -1,37 +1,66 @@
 import serial
+import time
+import threading
+
+# Opcodes
+ECHO_OPCODE = 0xec
+RESERVED = 0x00
+
+def create_packet(opcode, data):
+    packet_len = len(data) + 4
+    lsb_len = packet_len & 0xFF
+    msb_len = (packet_len >> 8) & 0xFF
+
+    # Combine all into packet
+    packet = bytearray([opcode, RESERVED, lsb_len, msb_len]) + data
+    return packet
+
+
+def echo(ser, message):
+     data = bytearray(message.encode('utf-8'))
+     packet = create_packet(ECHO_OPCODE, data)
+     ser.write(packet)
+     print(f"Sent packet: {packet.hex()}")
+
+
+def read_data(ser):
+    while True:
+        if ser.in_waiting:
+            received = ser.read(ser.in_waiting)
+            print(f"Received (hex): {received.hex()}")
+        time.sleep(0.1)
+
 
 def main():
     # Specify the USB port and baud rate
-    usb_port = "/dev/tty.usbserial-ib0RDpMt0"  # Change this to your USB device path
+    usb_port = "/dev/ttyUSB1"  # Change this to your USB device path
     baud_rate = 9600  # Adjust this to match your device's configuration
 
     try:
-        # Open the serial connection
+        # Open serial connection
         with serial.Serial(usb_port, baud_rate, timeout=None) as ser:
             print(f"Connected to {usb_port} at {baud_rate} baud")
 
-            while True:
-                # Get user input (1 character)
-                user_input = input("Enter a single character (or 'exit' to quit): ")
+            # Thread for incoming data
+            read_thread = threading.Thread(target=read_data, args=(ser,), daemon=True)
+            read_thread.start()
 
-                if user_input.lower() == 'exit':
-                    print("Exiting the program.")
-                    break
+            time.sleep(1)
 
-                if len(user_input) != 1:
-                    print("Please enter only one character.")
-                    continue
+            echo_tests = [
+                "", # empty message test
+                "Hi",
+                "testing testing",
+                "maroon 5 test"
+            ]
 
-                # Send the character to the USB device
-                ser.write(user_input.encode('utf-8'))
+            for test in echo_tests:
+                packet = create_packet(ECHO_OPCODE, bytearray(test.encode('utf-8')))
+                print(f"\nSent packet: {packet.hex()}")
+                print(f"Data: {test}")
+                ser.write(packet)
+                time.sleep(1)
 
-                # Wait for and read the response from the device
-                response = ser.readline().decode('utf-8').strip()
-                
-                if response:
-                    print(f"Response from device: {response}")
-                else:
-                    print("No response from device.")
 
     except serial.SerialException as e:
         print(f"Error: {e}")
