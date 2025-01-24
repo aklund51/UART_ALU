@@ -19,7 +19,7 @@ module uart_alu
 
 
     // misc signals
-    logic [4*DATA_WIDTH-1:0] acc_q, acc_d, curr_num_q, curr_num_d;
+    logic [(4*DATA_WIDTH)-1:0] acc_q, acc_d, curr_num_q, curr_num_d;
     logic [31:0] len_packet_d, len_packet_q;
     logic [1:0] byte_count_d, byte_count_q;
     logic [0:0] echo_skip_d, echo_skip_q;
@@ -41,6 +41,11 @@ module uart_alu
     typedef enum logic[3:0] {FETCH_OPCODE, RESERVE, LSB_LEN, MSB_LEN, 
     OPERAND_ONE, OPERAND_TWO, ECHO, ADD, TRANSMIT, MUL, DIV} ALU_CTRL_STATE;
 
+    wire [DATA_WIDTH-1:0] ECHO_OPCODE = 8'hec;
+    wire [DATA_WIDTH-1:0] ADD_OPCODE = 8'h01;
+    wire [DATA_WIDTH-1:0] MUL_OPCODE = 8'h02;
+    wire [DATA_WIDTH-1:0] DIV_OPCODE = 8'h03;
+
     ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
 
     uart 
@@ -60,12 +65,13 @@ module uart_alu
     );
 
     // receive by default
-    m_axis_tready = 1'b1;
-    s_axis_tvalid = 1'b0;
-    s_axis_tdata = 'd0;
+    always_comb begin
+        m_axis_tready = 1'b1;
+        s_axis_tvalid = 1'b0;
+        s_axis_tdata = 'd0;
+    end
 
-
-    always_ff @(posedge clk_i or posedge reset_sync_q) begin
+    always_ff @(posedge clk_i) begin
         if (reset_sync) begin
             curr_state_q <= FETCH_OPCODE;
             later_state_q <= FETCH_OPCODE;
@@ -101,7 +107,7 @@ module uart_alu
     unique case(curr_state_q)
         FETCH_OPCODE: begin
             echo_skip_d = 1'b0;
-            if (m_axis_tvalid) begin // ECHO OPCODE 0x01, ADD 0x02, MUL 0x03, DIV 0x04
+            if (m_axis_tvalid) begin // ECHO OPCODE 0xec, ADD 0x01, MUL 0x02, DIV 0x03
             case (m_axis_tdata)
                 ECHO_OPCODE: begin
                     later_state_d = ECHO;

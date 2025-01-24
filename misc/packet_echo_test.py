@@ -7,7 +7,7 @@ ECHO_OPCODE = 0xEC
 RESERVED = 0x00
 
 # Specify the USB port and baud rate
-usb_port = "/dev/ttyUSB2"  # Change this to your USB device path
+usb_port = "/dev/cu.usbserial-ib0RDpMt1"  # Change this to your USB device path
 baud_rate = 9600  # Adjust this to match your device's configuration
 ser = serial.Serial(usb_port, baud_rate, timeout=1)
 

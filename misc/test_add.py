@@ -26,7 +26,7 @@ def receive_result(ser):
 
 # Main function
 def main():
-    usb_port = '/dev/ttyUSB2'  # Replace with your port
+    usb_port = '/dev/cu.usbserial-ib0RDpMt1'  # Replace with your port
     baud_rate = 9600
     
     try:
