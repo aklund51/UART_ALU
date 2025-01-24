@@ -41,10 +41,14 @@ module uart_alu
     typedef enum logic[3:0] {FETCH_OPCODE, RESERVE, LSB_LEN, MSB_LEN, 
     OPERAND_ONE, OPERAND_TWO, ECHO, ADD, TRANSMIT, MUL, DIV} ALU_CTRL_STATE;
 
-    wire [DATA_WIDTH-1:0] ECHO_OPCODE = 8'hec;
-    wire [DATA_WIDTH-1:0] ADD_OPCODE = 8'h01;
-    wire [DATA_WIDTH-1:0] MUL_OPCODE = 8'h02;
-    wire [DATA_WIDTH-1:0] DIV_OPCODE = 8'h03;
+    typedef enum logic [7:0] {  // 8-bit opcodes
+        ECHO_OPCODE = 8'hec,
+        ADD_OPCODE = 8'h01,
+        MUL_OPCODE = 8'h02,
+        DIV_OPCODE = 8'h03
+    } opcode_e;
+    opcode_e op_val;
+
 
     ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
 
@@ -72,7 +76,7 @@ module uart_alu
     end
 
     always_ff @(posedge clk_i) begin
-        if (reset_sync) begin
+        if (reset_sync_q) begin
             curr_state_q <= FETCH_OPCODE;
             later_state_q <= FETCH_OPCODE;
             echo_skip_q <= 1'b0;
@@ -114,7 +118,7 @@ module uart_alu
                     echo_skip_d = 1'b1;
                 end
                 ADD_OPCODE: later_state_d = ADD;
-                MUL_OPCODE: later_state_d = MULT;
+                MUL_OPCODE: later_state_d = MUL;
                 DIV_OPCODE: later_state_d = DIV;
                 default: later_state_d = FETCH_OPCODE;
             endcase
@@ -208,7 +212,7 @@ module uart_alu
         end
 
         /*
-        MULT: begin
+        MUL: begin
 
         end
 
