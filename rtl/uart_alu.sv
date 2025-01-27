@@ -41,12 +41,12 @@ module uart_alu
     end
 
     typedef enum logic[4:0] {FETCH_OPCODE, RESERVE, LSB_LEN, MSB_LEN, 
-    OPERAND_ONE, OPERAND_TWO, ECHO, ADD, TRANSMIT, MULT, DIV} ALU_CTRL_STATE;
+    OPERAND_ONE, OPERAND_TWO, ECHO, ADD, TRANSMIT, MUL, DIV} ALU_CTRL_STATE;
 
-    wire [DATA_WIDTH-1:0] ECHO_OPCODE = 'hec;
-    wire [DATA_WIDTH-1:0] ADD_OPCODE = 'h01;
-    wire [DATA_WIDTH-1:0] MUL_OPCODE = 'h02;
-    wire [DATA_WIDTH-1:0] DIV_OPCODE = 'h03;
+    wire [DATA_WIDTH-1:0] ECHO_OPCODE = 8'hec;
+    wire [DATA_WIDTH-1:0] ADD_OPCODE = 8'h01;
+    wire [DATA_WIDTH-1:0] MUL_OPCODE = 8'h02;
+    wire [DATA_WIDTH-1:0] DIV_OPCODE = 8'h03;
 
     ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
 
@@ -63,20 +63,8 @@ module uart_alu
         .m_axis_tready(m_axis_tready),
         .RX_i(RX_i),
         .TX_o(TX_o),
-        .prescale(31500000/(9600*8))
+        .prescale(31500000/76800) // ~ 410.156
     );
-
-    // receive by default
-    always_comb begin
-        m_axis_tready = 1'b1;
-        s_axis_tvalid = 1'b0;
-        s_axis_tdata = 'd0;
-
-        mult_ready_i = 1'b0;
-        mult_valid_i = 1'b0;
-        div_ready_i = 1'b0;
-        div_valid_i = 1'b0;
-    end
 
 
     bsg_imul_iterative 
@@ -146,169 +134,169 @@ module uart_alu
         len_packet_d = len_packet_q;
         acc_d = acc_q;
         curr_num_d = curr_num_q;
+        m_axis_tready = 1'b1;
+        s_axis_tvalid = 1'b0;
+        s_axis_tdata = 'd0;
+        mult_ready_i = 1'b0;
+        mult_valid_i = 1'b0;
+        div_ready_i = 1'b0;
+        div_valid_i = 1'b0;
 
-
-    unique case(curr_state_q)
-        FETCH_OPCODE: begin
-            echo_skip_d = 1'b0;
-            if (m_axis_tvalid) begin // ECHO OPCODE 0xEC, ADD 0x01, MUL 0x02, DIV 0x03
-                if (m_axis_tdata == 'hec) begin
-                    echo_skip_d = 1'b1;
-                    later_state_d = ECHO;
-                    next_state_d = RESERVE;
-                end else if (m_axis_tdata == 'h01) begin
-                    later_state_d = ADD;
-                    next_state_d = RESERVE;
-                end else if (m_axis_tdata == 'h02) begin
-                    later_state_d = MULT;
-                    next_state_d = RESERVE;
-                end else if (m_axis_tdata == 'h03) begin
-                    later_state_d = DIV;
-                    next_state_d = RESERVE;
+        unique case(curr_state_q)
+            FETCH_OPCODE: begin
+                echo_skip_d = 1'b0;
+                if (m_axis_tvalid) begin // ECHO OPCODE 0xEC, ADD 0x01, MUL 0x02, DIV 0x03
+                    if (m_axis_tdata == ECHO_OPCODE) begin
+                        echo_skip_d = 1'b1;
+                        later_state_d = ECHO;
+                        next_state_d = RESERVE;
+                    end else if (m_axis_tdata == ADD_OPCODE) begin
+                        later_state_d = ADD;
+                        next_state_d = RESERVE;
+                    end else if (m_axis_tdata == MUL_OPCODE) begin
+                        later_state_d = MUL;
+                        next_state_d = RESERVE;
+                    end else if (m_axis_tdata == DIV_OPCODE) begin
+                        later_state_d = DIV;
+                        next_state_d = RESERVE;
+                    end
                 end
             end
-        end
 
-        RESERVE: begin
-            if (m_axis_tvalid) begin
-                next_state_d = LSB_LEN;
-            end
-        end
-
-        LSB_LEN: begin
-            if (m_axis_tvalid) begin
-                len_packet_d[DATA_WIDTH-1:0] = m_axis_tdata;
-                next_state_d = MSB_LEN;
-            end
-        end
-
-        MSB_LEN: begin
-            if (m_axis_tvalid) begin
-                len_packet_d[2*DATA_WIDTH-1:DATA_WIDTH] = m_axis_tdata;
-                next_state_d = echo_skip_q ? ECHO : OPERAND_ONE;
+            RESERVE: begin
+                if (m_axis_tvalid) begin
+                    next_state_d = LSB_LEN;
+                end
             end
 
-            byte_count_d = 0;
-            acc_d = 0;
-            curr_num_d = 0;
-
-        end
-
-        ECHO: begin
-            m_axis_tready = 1'b0;
-
-            if (m_axis_tvalid && s_axis_tready) begin
-                m_axis_tready = 1'b1;
-                s_axis_tdata = m_axis_tdata;
-                s_axis_tvalid = 1'b1;
-                len_packet_d = len_packet_q - 1;
+            LSB_LEN: begin
+                if (m_axis_tvalid) begin
+                    len_packet_d[DATA_WIDTH-1:0] = m_axis_tdata;
+                    next_state_d = MSB_LEN;
+                end
             end
 
-            if (len_packet_q == 'd4) begin
-                next_state_d = FETCH_OPCODE;
-                byte_count_d = 'd0;
-            end
-        end
-
-        OPERAND_ONE: begin
-            if (m_axis_tvalid) begin
-                byte_count_d = byte_count_q + 1;
-                len_packet_d = len_packet_q - 1;
-
-                if (byte_count_q == 'd4) begin
-                    byte_count_d = 0;
-                    next_state_d = TRANSMIT;
+            MSB_LEN: begin
+                if (m_axis_tvalid) begin
+                    len_packet_d[2*DATA_WIDTH-1:DATA_WIDTH] = m_axis_tdata;
+                    next_state_d = echo_skip_q ? ECHO : OPERAND_ONE;
                 end
 
-                if (byte_count_q == 'd3) begin
-                    byte_count_d = 0;
-                    next_state_d = OPERAND_TWO;
-                end
-                // load number
-                acc_d[byte_count_q*8+:8] = m_axis_tdata;
-            end
-        end
-
-        OPERAND_TWO: begin
-            if (m_axis_tvalid) begin
-                byte_count_d = byte_count_q + 1;
-                len_packet_d = len_packet_q - 1;
-
-                // read four bytes then go to operation
-                if (byte_count_q == 'd3) begin
-                    byte_count_d = 0;
-                    next_state_d = later_state_q;
-                end else if (len_packet_q == 'd4) begin
-                    byte_count_d = 0;
-                    next_state_d = TRANSMIT;
-                end
-                curr_num_d[byte_count_q*8+:8] = m_axis_tdata;
-            end
-        end 
-
-        ADD: begin
-            m_axis_tready = 1'b0;
-            acc_d = acc_q + curr_num_q;
-
-            if (len_packet_q == 'd4) begin
-                next_state_d = TRANSMIT;
-            end else begin
-                next_state_d = OPERAND_TWO;
-            end
-        end
-
-        MULT: begin
-            m_axis_tready = 1'b0;
-            mult_ready_i = 1'b1;
-
-            if (mult_ready_o && byte_count_q == 'd0) begin
-                byte_count_d = byte_count_q + 1;
-                mult_valid_i = 1'b1;
-            end
-
-            if(mult_valid_o) begin
-                acc_d = mult_result_o;
                 byte_count_d = 0;
+                acc_d = 0;
+                curr_num_d = 0;
 
-                if(len_packet_q == 'd4) begin
+            end
+
+            ECHO: begin
+                m_axis_tready = 1'b0;
+
+                if (m_axis_tvalid && s_axis_tready) begin
+                    m_axis_tready = 1'b1;
+                    s_axis_tdata = m_axis_tdata;
+                    s_axis_tvalid = 1'b1;
+                    len_packet_d = len_packet_q - 1;
+                end
+
+                if (len_packet_q == 'd4) begin
+                    next_state_d = FETCH_OPCODE;
+                    byte_count_d = 'd0;
+                end
+            end
+
+            OPERAND_ONE: begin
+                if (m_axis_tvalid) begin
+                    byte_count_d = byte_count_q + 1;
+                    len_packet_d = len_packet_q - 1;
+
+                    // load number
+                    acc_d[byte_count_q*8+:8] = m_axis_tdata;
+
+                    if (byte_count_q == 'd3) begin
+                        byte_count_d = 0;
+                        next_state_d = OPERAND_TWO;
+                    end
+                end
+            end
+
+            OPERAND_TWO: begin
+                if (m_axis_tvalid) begin
+                    byte_count_d = byte_count_q + 1;
+                    len_packet_d = len_packet_q - 1;
+
+                    // read four bytes then go to operation
+                    if (byte_count_q == 'd3) begin
+                        byte_count_d = 0;
+                        next_state_d = later_state_q;
+                    end else if (len_packet_q == 'd4) begin
+                        byte_count_d = 0;
+                        next_state_d = TRANSMIT;
+                    end
+                    curr_num_d[byte_count_q*8+:8] = m_axis_tdata;
+                end
+            end 
+
+            ADD: begin
+                m_axis_tready = 1'b0;
+                acc_d = acc_q + curr_num_q;
+
+                if (len_packet_q == 'd4) begin
                     next_state_d = TRANSMIT;
                 end else begin
                     next_state_d = OPERAND_TWO;
                 end
             end
-        end
 
-        DIV: begin
-            m_axis_tready = 1'b0;
-            div_ready_i = 1'b1;
+            MUL: begin
+                m_axis_tready = 1'b0;
+                mult_ready_i = 1'b1;
 
-            if (div_ready_o && byte_count_q == 'd0) begin
-                byte_count_d = byte_count_q + 1;
-                div_valid_i = 1'b1;
-            end
-
-            if (div_valid_o) begin
-                acc_d = div_result_o;
-                byte_count_d = 0;
-                next_state_d = TRANSMIT;
-            end
-        end
-
-        TRANSMIT: begin
-            m_axis_tready = 1'b0;
-            if (s_axis_tready) begin
-                if (byte_count_q == 'd3) begin
-                    byte_count_d = 0;
-                    next_state_d = FETCH_OPCODE;
+                if (mult_ready_o && byte_count_q == 'd0) begin
+                    byte_count_d = byte_count_q + 1;
+                    mult_valid_i = 1'b1;
                 end
-                s_axis_tdata = acc_q[byte_count_q*8+:8];
-                s_axis_tvalid = 1'b1;
-                byte_count_d = byte_count_q + 1;
+
+                if(mult_valid_o) begin
+                    acc_d = mult_result_o;
+                    byte_count_d = 0;
+
+                    if(len_packet_q == 'd4) begin
+                        next_state_d = TRANSMIT;
+                    end else begin
+                        next_state_d = OPERAND_TWO;
+                    end
+                end
             end
-        end
 
-    endcase
-end
+            DIV: begin
+                m_axis_tready = 1'b0;
+                div_ready_i = 1'b1;
 
+                if (div_ready_o && byte_count_q == 'd0) begin
+                    byte_count_d = byte_count_q + 1;
+                    div_valid_i = 1'b1;
+                end
+
+                if (div_valid_o) begin
+                    acc_d = div_result_o;
+                    byte_count_d = 0;
+                    next_state_d = TRANSMIT;
+                end
+            end
+
+            TRANSMIT: begin
+                m_axis_tready = 1'b0;
+                if (s_axis_tready) begin
+                    if (byte_count_q == 'd3) begin
+                        byte_count_d = 0;
+                        next_state_d = FETCH_OPCODE;
+                    end
+                    s_axis_tdata = acc_q[byte_count_q*8+:8];
+                    s_axis_tvalid = 1'b1;
+                    byte_count_d = byte_count_q + 1;
+                end
+            end
+
+        endcase
+    end
 endmodule
-   

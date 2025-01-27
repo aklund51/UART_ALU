@@ -49,8 +49,22 @@ uart_tx_inst (
     .s_axis_tready(s_axis_tready_sim),
     .txd(rx_i),
     .busy(),
-    .prescale(16'd1250)
+    .prescale(31500000/76800)
 );
+
+uart_rx
+#(.DATA_WIDTH(8))
+uart_rx_inst
+(
+    .clk(clk_i),
+    .rst(rst_ni),
+    .m_axis_tdata(m_axis_uart_tdata_sim),
+    .m_axis_tready(m_axis_tready_sim),
+    .m_axis_tvalid(m_axis_uart_tvalid),
+    .prescale(31500000/76800),
+    .rxd(tx_o)
+);
+
 
 
 task automatic reset;
@@ -61,7 +75,7 @@ endtask
 
 
 
-task automatic echo(logic [(4*8)-1:0] data);
+task automatic echo(logic [31:0] data);
     s_axis_tdata_sim <= 236;
     repeat(6) @(posedge clk_i);
     s_axis_tvalid_sim <= 1;
