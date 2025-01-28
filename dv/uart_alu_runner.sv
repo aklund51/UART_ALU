@@ -15,6 +15,7 @@ logic m_axis_tready_sim;
 logic tx_o;
 logic s_axis_tready_sim;
 logic s_axis_uart_tready_sim;
+logic [7:0] m_axis_uart_tdata_sim;
 logic m_axis_tvalid;
 logic m_axis_uart_tvalid;
 
@@ -72,6 +73,34 @@ task automatic reset;
     rst_ni <= 0;
 endtask
 
+task automatic add(logic [31:0] operand_1, logic [31:0] operand_2, logic [31:0] operand3);
+
+    s_axis_tdata_sim <= 236;
+    repeat(6) @(posedge clk_i);
+    s_axis_tvalid_sim <= 1;
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 0; //res
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 8; //lsb
+    @(negedge s_axis_tready_sim); 
+    s_axis_tdata_sim <= 0;//msb
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(1*8)-1:0];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(2*8)-1:8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(3*8)-1:2*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(4*8)-1:3*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tvalid_sim <= 0;
+    @(posedge s_axis_tready_sim);
+    repeat(10000) @(posedge clk_i);
+    $display("Test run completed.");
+
+
+endtask
+
 
 
 task automatic echo(logic [31:0] data);
@@ -95,7 +124,7 @@ task automatic echo(logic [31:0] data);
     @(negedge s_axis_tready_sim);
     s_axis_tvalid_sim <= 0;
     @(posedge s_axis_tready_sim);
-    repeat(100000) @(posedge clk_i);
+    repeat(10000) @(posedge clk_i);
     $display("Test run completed.");
 
 endtask

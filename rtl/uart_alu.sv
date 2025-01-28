@@ -10,9 +10,9 @@ module uart_alu
 );
 
     // UART signals
-    logic [0:0] s_axis_tready_d, s_axis_tready_q, s_axis_tvalid_d, s_axis_tvalid_q;
-    logic [0:0] m_axis_tready_d, m_axis_tready_q, m_axis_tvalid_d, m_axis_tvalid_q;
-    logic [DATA_WIDTH-1:0] s_axis_tdata_d, s_axis_tdata_q, m_axis_tdata_d, m_axis_tdata_q;
+    logic [0:0] s_axis_tready, s_axis_tvalid;
+    logic [0:0] m_axis_tready, m_axis_tvalid;
+    logic [DATA_WIDTH-1:0] s_axis_tdata, m_axis_tdata;
 
     // Divider and multiplier signals
     logic [0:0] div_ready_i, div_valid_i, div_valid_o, div_ready_o;
@@ -43,14 +43,10 @@ module uart_alu
     typedef enum logic[4:0] {FETCH_OPCODE, RESERVE, LSB_LEN, MSB_LEN, 
     OPERAND_ONE, OPERAND_TWO, ECHO, ADD, TRANSMIT, MUL, DIV} ALU_CTRL_STATE;
 
-    typedef enum logic [7:0] {  // 8-bit opcodes
-        ECHO_OPCODE = 8'hec,
-        ADD_OPCODE = 8'h01,
-        MUL_OPCODE = 8'h02,
-        DIV_OPCODE = 8'h03
-    } opcode_e;
-
-
+    wire [DATA_WIDTH-1:0] ECHO_OPCODE = 8'hec;
+    wire [DATA_WIDTH-1:0] ADD_OPCODE = 8'h01;
+    wire [DATA_WIDTH-1:0] MUL_OPCODE = 8'h02;
+    wire [DATA_WIDTH-1:0] DIV_OPCODE = 8'h03;
 
     ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
 
@@ -59,12 +55,12 @@ module uart_alu
     uart_inst
     (   .clk_i(clk_i),
         .rst_ni(reset_sync_q),
-        .s_axis_tdata(s_axis_tdata_q),
-        .s_axis_tvalid(s_axis_tvalid_q),
-        .s_axis_tready(s_axis_tready_d),
-        .m_axis_tdata(m_axis_tdata_d),
-        .m_axis_tvalid(m_axis_tvalid_d),
-        .m_axis_tready(m_axis_tready_q),
+        .s_axis_tdata(s_axis_tdata),
+        .s_axis_tvalid(s_axis_tvalid),
+        .s_axis_tready(s_axis_tready),
+        .m_axis_tdata(m_axis_tdata),
+        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tready(m_axis_tready),
         .RX_i(RX_i),
         .TX_o(TX_o),
         .prescale(31500000/76800) // ~ 410.156
@@ -116,11 +112,6 @@ module uart_alu
             len_packet_q <= 0;
             acc_q <= 0;
             curr_num_q <= 0;
-            m_axis_tdata_q <= '0;
-            s_axis_tready_q <= '0;
-            s_axis_tvalid_q <= '0;
-            m_axis_tready_q <= '1;
-            m_axis_tvalid_q <= '0;
 
         end else begin
             curr_state_q <= next_state_d;
@@ -130,12 +121,6 @@ module uart_alu
             len_packet_q <= len_packet_d;
             acc_q <= acc_d;
             curr_num_q <= curr_num_d;
-            s_axis_tdata_q <= s_axis_tdata_d;
-            m_axis_tdata_q <= m_axis_tdata_d;
-            s_axis_tready_q <= s_axis_tready_d;
-            s_axis_tvalid_q <= s_axis_tvalid_d;
-            m_axis_tready_q <= m_axis_tready_d;
-            m_axis_tvalid_q <= m_axis_tvalid_d;
 
         end
     end
