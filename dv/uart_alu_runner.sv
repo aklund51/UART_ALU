@@ -68,6 +68,7 @@ task automatic reset;
     rst_ni <= 0;
 endtask
 
+<<<<<<< HEAD
 task automatic transmit(input logic [7:0] data);
     @(posedge clk_i);
     //wait(s_axis_tready_sim)
@@ -77,6 +78,36 @@ task automatic transmit(input logic [7:0] data);
     @(posedge clk_i);
     s_axis_tvalid_sim <= 1'b0;
 endtask
+=======
+task automatic add(logic [31:0] operand_1, logic [31:0] operand_2, logic [31:0] operand3);
+
+    s_axis_tdata_sim <= 236;
+    repeat(6) @(posedge clk_i);
+    s_axis_tvalid_sim <= 1;
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 0; //res
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 8; //lsb
+    @(negedge s_axis_tready_sim); 
+    s_axis_tdata_sim <= 0;//msb
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(1*8)-1:0];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(2*8)-1:8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(3*8)-1:2*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(4*8)-1:3*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tvalid_sim <= 0;
+    @(posedge s_axis_tready_sim);
+    repeat(10000) @(posedge clk_i);
+    $display("Test run completed.");
+
+
+endtask
+
+>>>>>>> e95897f5d382d10f7d8cd64eb0170f851abab843
 
 task automatic receive(output logic [7:0] data);
     //wait(m_axis_tready_sim)
@@ -113,12 +144,38 @@ task automatic echo(logic [31:0] data);
     $display("Test run completed.");
 endtask
 
+<<<<<<< HEAD
 task automatic send_packet(input [7:0] opcode, input logic [15:0] packet_len, input logic [7:0] data[]);
     logic [7:0] header[3:0];
     header[0] = opcode;
     header[1] = 8'h00;
     header[2] = packet_len[7:0];
     header[3] = packet_len[15:8];
+=======
+task automatic add(logic [31:0] data);
+    s_axis_tdata_sim <= 8'h01; // send add
+    repeat(6) @(posedge clk_i);
+    s_axis_tvalid_sim <= 1;
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 0; //res
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 8; //lsb
+    @(negedge s_axis_tready_sim); 
+    s_axis_tdata_sim <= 0;//msb
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(1*8)-1:0];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(2*8)-1:8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(3*8)-1:2*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(4*8)-1:3*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tvalid_sim <= 0;
+    @(posedge s_axis_tready_sim);
+    repeat(10000) @(posedge clk_i);
+    $display("Test run completed.");
+>>>>>>> e95897f5d382d10f7d8cd64eb0170f851abab843
 
     foreach (header[item]) begin
         transmit(header[item]);
