@@ -96,4 +96,24 @@ task automatic echo(logic [31:0] data);
 
 endtask
 
+task automatic transmit(input logic [7:0] data);
+    @(posedge clk_i);
+    wait(s_axis_tready_sim)
+    @(posedge clk_i);
+    s_axis_tdata_sim <= data;
+    s_axis_tvalid_sim <= 1'b1;
+    @(posedge clk_i);
+    s_axis_tvalid_sim <= 1'b0;
+endtask
+
+task automatic receive(output logic [7:0] data);
+    wait(m_axis_tready_sim)
+    @(posedge clk_i);
+    m_axis_tready_sim <= 1'b1;
+    m_axis_tdata_sim = data;
+    @(posedge clk_i);
+    m_axis_tvalid_sim <= 1'b0;
+    @(posedge clk_i);
+endtask
+
 endmodule

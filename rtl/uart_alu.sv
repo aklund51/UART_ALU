@@ -48,7 +48,7 @@ module uart_alu
     wire [DATA_WIDTH-1:0] MUL_OPCODE = 8'h02;
     wire [DATA_WIDTH-1:0] DIV_OPCODE = 8'h03;
 
-    ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
+    ALU_CTRL_STATE curr_state_q, next_state_d, save_state_q, save_state_d;
 
     uart 
     #(.DATA_WIDTH(8))
@@ -106,7 +106,7 @@ module uart_alu
     always_ff @(posedge clk_i) begin
         if (reset_sync_q) begin
             curr_state_q <= FETCH_OPCODE;
-            later_state_q <= FETCH_OPCODE;
+            //save_state_q <= FETCH_OPCODE;
             echo_skip_q <= 1'b0;
             byte_count_q <= 0;
             len_packet_q <= 0;
@@ -115,7 +115,7 @@ module uart_alu
 
         end else begin
             curr_state_q <= next_state_d;
-            later_state_q <= later_state_d;
+            save_state_q <= save_state_d;
             echo_skip_q <= echo_skip_d;
             byte_count_q <= byte_count_d;
             len_packet_q <= len_packet_d;
@@ -128,7 +128,7 @@ module uart_alu
 
     always_comb begin
         next_state_d = curr_state_q;
-        later_state_d = later_state_q;
+        save_state_d = save_state_q;
         echo_skip_d = echo_skip_q;
         byte_count_d = byte_count_q;
         len_packet_d = len_packet_q;
@@ -148,17 +148,19 @@ module uart_alu
                 if (m_axis_tvalid) begin // ECHO OPCODE 0xEC, ADD 0x01, MUL 0x02, DIV 0x03
                     if (m_axis_tdata == ECHO_OPCODE) begin
                         echo_skip_d = 1'b1;
-                        later_state_d = ECHO;
+                        save_state_d = ECHO;
                         next_state_d = RESERVE;
                     end else if (m_axis_tdata == ADD_OPCODE) begin
-                        later_state_d = ADD;
+                        save_state_d = ADD;
                         next_state_d = RESERVE;
                     end else if (m_axis_tdata == MUL_OPCODE) begin
-                        later_state_d = MUL;
+                        save_state_d = MUL;
                         next_state_d = RESERVE;
                     end else if (m_axis_tdata == DIV_OPCODE) begin
-                        later_state_d = DIV;
+                        save_state_d = DIV;
                         next_state_d = RESERVE;
+                    end else begin
+                        next_state_d = FETCH_OPCODE;
                     end
                 end
             end
@@ -185,7 +187,6 @@ module uart_alu
                 byte_count_d = 0;
                 acc_d = 0;
                 curr_num_d = 0;
-
             end
 
             ECHO: begin
@@ -227,7 +228,7 @@ module uart_alu
                     // read four bytes then go to operation
                     if (byte_count_q == 'd3) begin
                         byte_count_d = 0;
-                        next_state_d = later_state_q;
+                        next_state_d = save_state_q;
                     end else if (len_packet_q == 'd4) begin
                         byte_count_d = 0;
                         next_state_d = TRANSMIT;
@@ -296,7 +297,6 @@ module uart_alu
                     byte_count_d = byte_count_q + 1;
                 end
             end
-
         endcase
     end
 endmodule

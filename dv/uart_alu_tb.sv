@@ -17,8 +17,8 @@ always begin
     repeat(3) @(posedge uart_alu_runner.clk_i);
 
     repeat(1) begin 
-        uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
-        uart_alu_runner.add({8'h42, 8'h69, 8'h42, 8'h69});
+        //uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
+        uart_alu_runner.fuzz_add(100);
     end
 
     $display( "End simulation." );
