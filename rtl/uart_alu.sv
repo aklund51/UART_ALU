@@ -63,7 +63,7 @@ module uart_alu
         .m_axis_tready(m_axis_tready),
         .RX_i(RX_i),
         .TX_o(TX_o),
-        .prescale(31500000/76800) // ~ 410.156
+        .prescale(31500000/76800) // ~ 410.156, fixes lint error
     );
 
 

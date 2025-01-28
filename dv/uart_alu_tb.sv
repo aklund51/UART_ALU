@@ -18,7 +18,7 @@ always begin
 
     repeat(1) begin 
         uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
-
+        uart_alu_runner.add({8'h42, 8'h69, 8'h42, 8'h69});
     end
 
     $display( "End simulation." );

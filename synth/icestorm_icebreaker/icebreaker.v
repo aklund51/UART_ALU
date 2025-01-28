@@ -1,9 +1,8 @@
 module icebreaker (
     input  wire clk_i,
-    input  wire reset_unsafe_i,
-    input  wire RX_i,
-    output wire TX_o,
-    output wire LEDG_N
+    input  wire rst_ni,
+    input  wire rx_i,
+    output wire tx_o
 );
 
 
@@ -29,8 +28,8 @@ SB_PLL40_PAD #(
 uart_alu 
 uart_alu_inst(
     .clk_i(clk_31),
-    .reset_i(reset_unsafe_i),
-    .RX_i(RX_i),
-    .TX_o(TX_o));
+    .reset_i(rst_ni),
+    .RX_i(rx_i),
+    .TX_o(tx_o));
 
 endmodule

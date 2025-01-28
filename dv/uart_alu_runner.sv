@@ -104,7 +104,33 @@ endtask
 
 
 task automatic echo(logic [31:0] data);
-    s_axis_tdata_sim <= 236;
+    s_axis_tdata_sim <= 236; // send echo
+    repeat(6) @(posedge clk_i);
+    s_axis_tvalid_sim <= 1;
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 0; //res
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= 8; //lsb
+    @(negedge s_axis_tready_sim); 
+    s_axis_tdata_sim <= 0;//msb
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(1*8)-1:0];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(2*8)-1:8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(3*8)-1:2*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tdata_sim <= data[(4*8)-1:3*8];
+    @(negedge s_axis_tready_sim);
+    s_axis_tvalid_sim <= 0;
+    @(posedge s_axis_tready_sim);
+    #20
+    $display("Test run completed.");
+
+endtask
+
+task automatic add(logic [31:0] data);
+    s_axis_tdata_sim <= 8'h01; // send add
     repeat(6) @(posedge clk_i);
     s_axis_tvalid_sim <= 1;
     @(negedge s_axis_tready_sim);
