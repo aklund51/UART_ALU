@@ -73,26 +73,36 @@ task automatic reset;
     rst_ni <= 0;
 endtask
 
-task automatic add(logic [31:0] operand_1, logic [31:0] operand_2, logic [31:0] operand3);
 
-    s_axis_tdata_sim <= 236;
+    localparam operands = 5;
+    logic [(32*operands)-1:0] data;
+    logic [15:0] length;
+    logic [$clog2(operands):0] i;
+
+task automatic add;
+    data <= $urandom();
+    length <= (operands*4) +4;
+
+    i <= '0;
+    s_axis_tdata_sim <= 1;
     repeat(6) @(posedge clk_i);
     s_axis_tvalid_sim <= 1;
     @(negedge s_axis_tready_sim);
     s_axis_tdata_sim <= 0; //res
     @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= 8; //lsb
+    s_axis_tdata_sim <= length[7:0]; //lsb
     @(negedge s_axis_tready_sim); 
-    s_axis_tdata_sim <= 0;//msb
+    s_axis_tdata_sim <= length[15:8];//msb
+    @(negedge s_axis_tready_sim); 
+
+    for(i = 0; i < length -4; i++) begin
+
+    s_axis_tdata_sim <= data >> (8);
     @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(1*8)-1:0];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(2*8)-1:8];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(3*8)-1:2*8];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(4*8)-1:3*8];
-    @(negedge s_axis_tready_sim);
+
+    end 
+
+
     s_axis_tvalid_sim <= 0;
     @(posedge s_axis_tready_sim);
     repeat(10000) @(posedge clk_i);
@@ -129,30 +139,6 @@ task automatic echo(logic [31:0] data);
 
 endtask
 
-task automatic add(logic [31:0] data);
-    s_axis_tdata_sim <= 8'h01; // send add
-    repeat(6) @(posedge clk_i);
-    s_axis_tvalid_sim <= 1;
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= 0; //res
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= 8; //lsb
-    @(negedge s_axis_tready_sim); 
-    s_axis_tdata_sim <= 0;//msb
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(1*8)-1:0];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(2*8)-1:8];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(3*8)-1:2*8];
-    @(negedge s_axis_tready_sim);
-    s_axis_tdata_sim <= data[(4*8)-1:3*8];
-    @(negedge s_axis_tready_sim);
-    s_axis_tvalid_sim <= 0;
-    @(posedge s_axis_tready_sim);
-    repeat(10000) @(posedge clk_i);
-    $display("Test run completed.");
 
-endtask
 
 endmodule
