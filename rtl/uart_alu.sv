@@ -10,9 +10,9 @@ module uart_alu
 );
 
     // UART signals
-    logic [0:0] s_axis_tready, s_axis_tvalid;
-    logic [0:0] m_axis_tready, m_axis_tvalid;
-    logic [DATA_WIDTH-1:0] s_axis_tdata, m_axis_tdata;
+    logic [0:0] s_axis_tready_d, s_axis_tready_q, s_axis_tvalid_d, s_axis_tvalid_q;
+    logic [0:0] m_axis_tready_d, m_axis_tready_q, m_axis_tvalid_d, m_axis_tvalid_q;
+    logic [DATA_WIDTH-1:0] s_axis_tdata_d, s_axis_tdata_q, m_axis_tdata_d, m_axis_tdata_q;
 
     // Divider and multiplier signals
 
@@ -47,7 +47,7 @@ module uart_alu
         MUL_OPCODE = 8'h02,
         DIV_OPCODE = 8'h03
     } opcode_e;
-    opcode_e op_val;
+
 
 
     ALU_CTRL_STATE curr_state_q, next_state_d, later_state_q, later_state_d;
@@ -57,23 +57,17 @@ module uart_alu
     uart_inst
     (   .clk_i(clk_i),
         .rst_ni(reset_sync_q),
-        .s_axis_tdata(s_axis_tdata),
-        .s_axis_tvalid(s_axis_tvalid),
-        .s_axis_tready(s_axis_tready),
-        .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
-        .m_axis_tready(m_axis_tready),
+        .s_axis_tdata(s_axis_tdata_q),
+        .s_axis_tvalid(s_axis_tvalid_q),
+        .s_axis_tready(s_axis_tready_d),
+        .m_axis_tdata(m_axis_tdata_d),
+        .m_axis_tvalid(m_axis_tvalid_d),
+        .m_axis_tready(m_axis_tready_q),
         .RX_i(RX_i),
         .TX_o(TX_o),
         .prescale(31500000/(9600*8))
     );
 
-    // receive by default
-    always_comb begin
-        m_axis_tready = 1'b1;
-        s_axis_tvalid = 1'b0;
-        s_axis_tdata = 'd0;
-    end
 
     always_ff @(posedge clk_i) begin
         if (reset_sync_q) begin
@@ -84,6 +78,11 @@ module uart_alu
             len_packet_q <= 0;
             acc_q <= 0;
             curr_num_q <= 0;
+            m_axis_tdata_q <= '0;
+            s_axis_tready_q <= '0;
+            s_axis_tvalid_q <= '0;
+            m_axis_tready_q <= '1;
+            m_axis_tvalid_q <= '0;
 
         end else begin
             curr_state_q <= next_state_d;
@@ -93,6 +92,12 @@ module uart_alu
             len_packet_q <= len_packet_d;
             acc_q <= acc_d;
             curr_num_q <= curr_num_d;
+            s_axis_tdata_q <= s_axis_tdata_d;
+            m_axis_tdata_q <= m_axis_tdata_d;
+            s_axis_tready_q <= s_axis_tready_d;
+            s_axis_tvalid_q <= s_axis_tvalid_d;
+            m_axis_tready_q <= m_axis_tready_d;
+            m_axis_tvalid_q <= m_axis_tvalid_d;
 
         end
     end
@@ -106,13 +111,18 @@ module uart_alu
         len_packet_d = len_packet_q;
         acc_d = acc_q;
         curr_num_d = curr_num_q;
-
+        s_axis_tdata_d = s_axis_tdata_q;
+        s_axis_tready_d = s_axis_tready_q;
+        s_axis_tvalid_d = s_axis_tvalid_q;
+        m_axis_tvalid_d = m_axis_tvalid_q;
+        m_axis_tready_d = s_axis_tready_q;
 
     unique case(curr_state_q)
         FETCH_OPCODE: begin
+            next_state_d = FETCH_OPCODE;
             echo_skip_d = 1'b0;
-            if (m_axis_tvalid) begin // ECHO OPCODE 0xec, ADD 0x01, MUL 0x02, DIV 0x03
-            case (m_axis_tdata)
+            if (m_axis_tvalid_q) begin // ECHO OPCODE 0xec, ADD 0x01, MUL 0x02, DIV 0x03
+            case (m_axis_tdata_q)
                 ECHO_OPCODE: begin
                     later_state_d = ECHO;
                     echo_skip_d = 1'b1;
@@ -122,26 +132,31 @@ module uart_alu
                 DIV_OPCODE: later_state_d = DIV;
                 default: later_state_d = FETCH_OPCODE;
             endcase
-                next_state_d = RESERVE;
+                if(later_state_d == FETCH_OPCODE) begin
+                    next_state_d = FETCH_OPCODE;
+                end
+                else begin
+                    next_state_d = RESERVE;
+                end
             end
         end
 
         RESERVE: begin
-            if (m_axis_tvalid) begin
+            if (m_axis_tvalid_d) begin
                 next_state_d = LSB_LEN;
             end
         end
 
         LSB_LEN: begin
-            if (m_axis_tvalid) begin
-                len_packet_d[DATA_WIDTH-1:0] = m_axis_tdata;
+            if (m_axis_tvalid_q) begin
+                len_packet_d[DATA_WIDTH-1:0] = m_axis_tdata_q;
                 next_state_d = MSB_LEN;
             end
         end
 
         MSB_LEN: begin
-            if (m_axis_tvalid) begin
-                len_packet_d[2*DATA_WIDTH-1:DATA_WIDTH] = m_axis_tdata;
+            if (m_axis_tvalid_q) begin
+                len_packet_d[2*DATA_WIDTH-1:DATA_WIDTH] = m_axis_tdata_q;
                 next_state_d = echo_skip_q ? ECHO : OPERAND_ONE;
             end
 
@@ -152,28 +167,28 @@ module uart_alu
         end
 
         ECHO: begin
-            m_axis_tready = 1'b0;
 
-            if (m_axis_tvalid && s_axis_tready) begin
-                m_axis_tready = 1'b1;
-                s_axis_tdata = m_axis_tdata;
-                s_axis_tvalid = 1'b1;
+            if (m_axis_tvalid_q) begin
+                s_axis_tdata_d = m_axis_tdata_q;
+                m_axis_tready_d = 1'b1;
+                s_axis_tvalid_d = 1'b1;
                 len_packet_d = len_packet_q - 1;
             end
 
-            if (len_packet_q == 'd4) begin
+            if ((len_packet_q === 16'd4) && s_axis_tready_q) begin
+                s_axis_tvalid_d = 1'b0;
                 next_state_d = FETCH_OPCODE;
                 byte_count_d = 'd0;
             end
         end
 
         OPERAND_ONE: begin
-            if (m_axis_tvalid) begin
+            if (m_axis_tvalid_q) begin
                 byte_count_d = byte_count_q + 1;
                 len_packet_d = len_packet_q - 1;
 
                 // load number
-                acc_d[byte_count_q*8+:8] = m_axis_tdata;
+                acc_d[byte_count_q*8+:8] = m_axis_tdata_q;
 
                 //
                 if (byte_count_q == 'd3) begin
@@ -184,11 +199,11 @@ module uart_alu
         end
 
         OPERAND_TWO: begin
-            if (m_axis_tvalid) begin
+            if (m_axis_tvalid_q) begin
                 byte_count_d = byte_count_q + 1;
                 len_packet_d = len_packet_q - 1;
 
-                curr_num_d[byte_count_q*8+:8] = m_axis_tdata;
+                curr_num_d[byte_count_q*8+:8] = m_axis_tdata_q;
                 // read four bytes then go to operation
                 if (byte_count_q == 'd3) begin
                     byte_count_d = 0;
@@ -201,7 +216,7 @@ module uart_alu
         end 
 
         ADD: begin
-            m_axis_tready = 1'b0;
+            m_axis_tready_d = 1'b0;
             acc_d = acc_q + curr_num_q;
             if (len_packet_q == 'd4) begin
                 next_state_d = TRANSMIT;
@@ -222,14 +237,14 @@ module uart_alu
         */
 
         TRANSMIT: begin
-            m_axis_tready = 1'b0;
-            if (s_axis_tready) begin
+            m_axis_tready_d = 1'b0;
+            if (s_axis_tready_q) begin
                 if (byte_count_q == 'd3) begin
                     byte_count_d = 0;
                     next_state_d = FETCH_OPCODE;
                 end
-                s_axis_tdata = acc_q[byte_count_q*8+:8];
-                s_axis_tvalid = 1'b1;
+                s_axis_tdata_d = acc_q[byte_count_q*8+:8];
+                s_axis_tvalid_d = 1'b1;
                 byte_count_d = byte_count_q + 1;
             end
         end

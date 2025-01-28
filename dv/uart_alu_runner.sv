@@ -15,7 +15,6 @@ logic m_axis_tready_sim;
 logic tx_o;
 logic s_axis_tready_sim;
 logic s_axis_uart_tready_sim;
-logic [7:0] m_axis_uart_tdata_sim;
 logic m_axis_tvalid;
 logic m_axis_uart_tvalid;
 
@@ -49,7 +48,7 @@ uart_tx_inst (
     .s_axis_tready(s_axis_tready_sim),
     .txd(rx_i),
     .busy(),
-    .prescale(16'd1250)
+    .prescale(31500000/(9600*8))
 );
 
 
@@ -62,8 +61,7 @@ endtask
 
 
 task automatic echo(logic [(4*8)-1:0] data);
-    s_axis_tdata_sim <= 236;
-    repeat(6) @(posedge clk_i);
+    s_axis_tdata_sim <= 8'hec;
     s_axis_tvalid_sim <= 1;
     @(negedge s_axis_tready_sim);
     s_axis_tdata_sim <= 0; //res
@@ -82,7 +80,7 @@ task automatic echo(logic [(4*8)-1:0] data);
     @(negedge s_axis_tready_sim);
     s_axis_tvalid_sim <= 0;
     @(posedge s_axis_tready_sim);
-    #20
+    repeat(100000) @(posedge clk_i);
     $display("Test run completed.");
 
 endtask
