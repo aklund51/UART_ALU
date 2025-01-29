@@ -106,7 +106,6 @@ module uart_alu
     always_ff @(posedge clk_i) begin
         if (reset_sync_q) begin
             curr_state_q <= FETCH_OPCODE;
-            //save_state_q <= FETCH_OPCODE;
             echo_skip_q <= 1'b0;
             byte_count_q <= 0;
             len_packet_q <= 0;
