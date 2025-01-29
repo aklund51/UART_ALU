@@ -83,7 +83,7 @@ task automatic receive(output logic [7:0] data);
     @(posedge clk_i);
     m_axis_tready_sim <= 1'b1;
     m_axis_tdata_sim = data;
-    @(negedge m_axis_tvalid_sim);
+    @(posedge clk_i);
     m_axis_tvalid_sim <= 1'b0;
     @(posedge clk_i);
 endtask
@@ -115,10 +115,10 @@ endtask
 
 task automatic send_packet(input [7:0] opcode, input logic [15:0] packet_len, input logic [7:0] data[]);
     logic [7:0] header[3:0];
-    header[0] = opcode;
-    header[1] = 8'h00;
-    header[2] = packet_len[7:0];
-    header[3] = packet_len[15:8];
+    header[3] = opcode;
+    header[2] = 8'h00;
+    header[1] = packet_len[7:0];
+    header[0] = packet_len[15:8];
 
     foreach (header[item]) begin
         transmit(header[item]);
@@ -150,7 +150,7 @@ task automatic compute_add(input logic [31:0] numbers[], input int amt_operands,
         data[bytes*4] = numbers[bytes][7:0];
     end
 
-    len_packet = 16'd4 + 16'(data.size());
+    len_packet = amt_operands*4 +4;
     send_packet(8'h01, len_packet, data);
     @(posedge clk_i);
     receive_result(result);
