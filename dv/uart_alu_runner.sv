@@ -184,4 +184,54 @@ task automatic fuzz_add(input int tests);
     end
 endtask
 
+
+task automatic compute_mul(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
+    logic [7:0] data[];
+    logic [15:0] len_packet;
+    logic [31:0] result;
+
+    data = new[amt_operands*4]; // byte array
+    for (int bytes = 0; bytes < amt_operands; bytes++) begin
+        data[bytes*4+3] = numbers[bytes][31:24];
+        data[bytes*4+2] = numbers[bytes][23:16];
+        data[bytes*4+1] = numbers[bytes][15:8];
+        data[bytes*4] = numbers[bytes][7:0];
+    end
+
+    len_packet = amt_operands*4 +4;
+    send_packet(8'h02, len_packet, data);
+    @(posedge clk_i);
+    receive_result(result);
+
+    if (result === expected) begin
+        $display("PASS");
+    end else begin
+        $display("FAIL");
+        $display("Expected: %0d", $signed(expected));
+        $display("Received: %0d", $signed(result));
+    end
+
+    @(posedge clk_i);
+endtask
+
+
+task automatic fuzz_mul(input int tests);
+    logic [31:0] expected, list[];
+    int operands;
+
+    for (int test = 0; test < tests; test++) begin
+        operands = $urandom_range(2, 5); // arbitrary range of operands
+        list = new[operands];
+
+        foreach (list[i]) begin
+            list[i] = $urandom();
+        end
+
+        expected = 1;
+        foreach (list[i]) expected *= list[i];
+
+        compute_mul(list, operands, expected);
+    end
+endtask
+
 endmodule
