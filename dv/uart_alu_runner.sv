@@ -82,9 +82,9 @@ task automatic receive(output logic [7:0] data);
     //wait(m_axis_tready_sim)
     @(posedge clk_i);
     m_axis_tready_sim <= 1'b1;
-    m_axis_tdata_sim = data;
     @(negedge m_axis_tvalid_sim);
-    m_axis_tvalid_sim <= 1'b0;
+    data = m_axis_tdata_sim;
+    m_axis_tready_sim <= 0;
 endtask
 
 task automatic echo(logic [31:0] data);
@@ -133,7 +133,7 @@ task automatic receive_result(output logic [31:0] result);
     foreach (bytes[item]) begin
         receive(bytes[item]);
     end
-    result = {bytes[3], bytes[2], bytes[1], bytes[0]};
+    result = {bytes[0], bytes[1], bytes[2], bytes[3]};
 endtask
 
 task automatic compute_add(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
