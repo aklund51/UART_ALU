@@ -112,6 +112,7 @@ module uart_alu
             len_packet_q <= 0;
             acc_q <= 0;
             curr_num_q <= 0;
+            
 
         end else begin
             curr_state_q <= next_state_d;
@@ -121,7 +122,6 @@ module uart_alu
             len_packet_q <= len_packet_d;
             acc_q <= acc_d;
             curr_num_q <= curr_num_d;
-
         end
     end
 

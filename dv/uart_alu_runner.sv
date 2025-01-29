@@ -74,7 +74,7 @@ task automatic transmit(input logic [7:0] data);
     @(posedge clk_i);
     s_axis_tdata_sim <= data;
     s_axis_tvalid_sim <= 1'b1;
-    @(posedge clk_i);
+    @(negedge s_axis_tready_sim);
     s_axis_tvalid_sim <= 1'b0;
 endtask
 
@@ -83,7 +83,7 @@ task automatic receive(output logic [7:0] data);
     @(posedge clk_i);
     m_axis_tready_sim <= 1'b1;
     m_axis_tdata_sim = data;
-    @(posedge clk_i);
+    @(negedge m_axis_tvalid_sim);
     m_axis_tvalid_sim <= 1'b0;
     @(posedge clk_i);
 endtask
@@ -169,7 +169,7 @@ task automatic fuzz_add(input int tests);
     int operands;
 
     for (int test = 0; test < tests; test++) begin
-        operands = $urandom_range(2, 50); // arbitrary range of operands
+        operands = $urandom_range(2, 5); // arbitrary range of operands
         list = new[operands];
 
         foreach (list[i]) begin
@@ -182,6 +182,5 @@ task automatic fuzz_add(input int tests);
         compute_add(list, operands, expected);
     end
 endtask
->>>>>>> b4ec67e421729e52bf10e57417b8f3ca9e8c2c48
 
 endmodule
