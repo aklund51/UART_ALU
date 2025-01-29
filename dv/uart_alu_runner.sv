@@ -83,9 +83,8 @@ task automatic receive(output logic [7:0] data);
     @(posedge clk_i);
     m_axis_tready_sim <= 1'b1;
     m_axis_tdata_sim = data;
-    @(posedge clk_i);
+    @(negedge m_axis_tvalid_sim);
     m_axis_tvalid_sim <= 1'b0;
-    @(posedge clk_i);
 endtask
 
 task automatic echo(logic [31:0] data);
@@ -162,6 +161,8 @@ task automatic compute_add(input logic [31:0] numbers[], input int amt_operands,
         $display("Expected: %0d", $signed(expected));
         $display("Received: %0d", $signed(result));
     end
+
+    @(posedge clk_i);
 endtask
 
 task automatic fuzz_add(input int tests);
