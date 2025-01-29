@@ -234,4 +234,55 @@ task automatic fuzz_mul(input int tests);
     end
 endtask
 
+task automatic compute_div(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
+    logic [7:0] data[];
+    logic [15:0] len_packet;
+    logic [31:0] result;
+
+    data = new[amt_operands*4]; // byte array
+    for (int bytes = 0; bytes < amt_operands; bytes++) begin
+        data[bytes*4+3] = numbers[bytes][31:24];
+        data[bytes*4+2] = numbers[bytes][23:16];
+        data[bytes*4+1] = numbers[bytes][15:8];
+        data[bytes*4] = numbers[bytes][7:0];
+    end
+
+    len_packet = amt_operands*4 +4;
+    send_packet(8'h03, len_packet, data);
+    @(posedge clk_i);
+    receive_result(result);
+
+    if (result === expected) begin
+        $display("PASS");
+        $display("Expected & Received: %0d", $signed(expected));
+    end else begin
+        $display("FAIL");
+        $display("Expected: %0d", $signed(expected));
+        $display("Received: %0d", $signed(result));
+    end
+
+    @(posedge clk_i);
+endtask
+
+task automatic fuzz_div(input int tests);
+    logic [31:0] expected, list[];
+
+    for (int test = 0; test < tests; test++) begin
+        list = new[2]; // only 2 operands
+
+        foreach (list[i]) begin
+            list[i] = $urandom();
+        end
+
+        expected = 0;
+        if (list[1] !== 0) begin
+            list[1] = $urandom(); // gen new number so cant divide by zero
+        end
+
+        expected = $signed(list[0])/$signed(list[1]);
+
+        compute_div(list, 2, expected);
+    end
+endtask
+
 endmodule
