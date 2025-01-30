@@ -109,6 +109,7 @@ task automatic echo(logic [31:0] data);
     s_axis_tvalid_sim <= 0;
     @(posedge s_axis_tready_sim);
     #20
+    @(posedge clk_i);
     $display("Test run completed.");
 endtask
 
@@ -181,6 +182,7 @@ task automatic fuzz_add(input int tests);
         foreach (list[i]) expected += list[i];
 
         compute_add(list, operands, expected);
+        @(posedge clk_i);
     end
 endtask
 
@@ -231,6 +233,7 @@ task automatic fuzz_mul(input int tests);
         foreach (list[i]) expected *= list[i];
 
         compute_mul(list, operands, expected);
+        @(posedge clk_i);
     end
 endtask
 
@@ -282,6 +285,7 @@ task automatic fuzz_div(input int tests);
         expected = $signed(list[0])/$signed(list[1]);
 
         compute_div(list, 2, expected);
+        @(posedge clk_i);
     end
 endtask
 

@@ -256,7 +256,6 @@ module uart_alu
             end
 
             MUL: begin
-                mult_valid_i = 1'b1;
                 m_axis_tready = 1'b0;
                 mult_ready_i = 1'b1;
 
@@ -266,17 +265,12 @@ module uart_alu
                 end
 
                 if(mult_valid_o) begin
-                    mult_valid_i = 1'b0;
                     acc_d = mult_result_o;
                     byte_count_d = 0;
 
                     if(len_packet_q == 'd4) begin
-                        mult_valid_i = 1'b0;
-                        mult_ready_i = 1'b0;
                         next_state_d = TRANSMIT;
                     end else begin
-                        mult_valid_i = 1'b0;
-                        mult_ready_i = 1'b0;
                         next_state_d = OPERAND_TWO;
                     end
                 end
