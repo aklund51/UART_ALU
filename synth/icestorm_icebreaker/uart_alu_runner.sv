@@ -13,8 +13,8 @@ logic m_axis_tready_sim;
 // Outputs
 logic tx_o;
 logic s_axis_tready_sim;
-logic [7:0] m_axis_uart_tdata_sim;
-logic m_axis_uart_tvalid;
+logic [7:0] m_axis_tdata_sim;
+logic m_axis_tvalid;
 
  initial begin
      clk_i = 0;
@@ -56,9 +56,9 @@ uart_rx_inst
 (
     .clk(pll_out),
     .rst(!rst_ni),
-    .m_axis_tdata(m_axis_uart_tdata_sim),
+    .m_axis_tdata(m_axis_tdata_sim),
     .m_axis_tready(m_axis_tready_sim),
-    .m_axis_tvalid(m_axis_uart_tvalid),
+    .m_axis_tvalid(m_axis_tvalid),
     .prescale(31500000/76800),
     .rxd(tx_o)
 );
@@ -98,22 +98,195 @@ endtask
 
 task automatic transmit(input logic [7:0] data);
     @(posedge clk_i);
-    wait(s_axis_tready_sim)
+    //wait(s_axis_tready_sim)
     @(posedge clk_i);
     s_axis_tdata_sim <= data;
     s_axis_tvalid_sim <= 1'b1;
-    @(posedge clk_i);
+    @(negedge s_axis_tready_sim);
     s_axis_tvalid_sim <= 1'b0;
 endtask
 
 task automatic receive(output logic [7:0] data);
-    wait(m_axis_tready_sim)
+    //wait(m_axis_tready_sim)
     @(posedge clk_i);
     m_axis_tready_sim <= 1'b1;
-    m_axis_tdata_sim = data;
+    @(negedge m_axis_tvalid);
+    data = m_axis_tdata_sim;
+    m_axis_tready_sim <= 0;
+endtask
+
+
+task automatic send_packet(input [7:0] opcode, input logic [15:0] packet_len, input logic [7:0] data[]);
+    logic [7:0] header[3:0];
+    header[3] = opcode;
+    header[2] = 8'h00;
+    header[1] = packet_len[7:0];
+    header[0] = packet_len[15:8];
+
+    foreach (header[item]) begin
+        transmit(header[item]);
+    end
+
+    foreach (data[item]) begin
+        transmit(data[item]);
+    end
+endtask
+
+task automatic receive_result(output logic [31:0] result);
+    logic [7:0] bytes [3:0];
+    foreach (bytes[item]) begin
+        receive(bytes[item]);
+    end
+    result = {bytes[0], bytes[1], bytes[2], bytes[3]};
+endtask
+
+task automatic compute_add(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
+    logic [7:0] data[];
+    logic [15:0] len_packet;
+    logic [31:0] result;
+
+    data = new[amt_operands*4]; // byte array
+    for (int bytes = 0; bytes < amt_operands; bytes++) begin
+        data[bytes*4+3] = numbers[bytes][31:24];
+        data[bytes*4+2] = numbers[bytes][23:16];
+        data[bytes*4+1] = numbers[bytes][15:8];
+        data[bytes*4] = numbers[bytes][7:0];
+    end
+
+    len_packet = amt_operands*4 +4;
+    send_packet(8'h01, len_packet, data);
     @(posedge clk_i);
-    m_axis_tvalid_sim <= 1'b0;
+    receive_result(result);
+
+    if (result === expected) begin
+        $display("PASS");
+    end else begin
+        $display("FAIL");
+        $display("Expected: %0d", $signed(expected));
+        $display("Received: %0d", $signed(result));
+    end
+
     @(posedge clk_i);
+endtask
+
+task automatic fuzz_add(input int tests);
+    logic [31:0] expected, list[];
+    int operands;
+
+    for (int test = 0; test < tests; test++) begin
+        operands = $urandom_range(2, 5); // arbitrary range of operands
+        list = new[operands];
+
+        foreach (list[i]) begin
+            list[i] = $urandom();
+        end
+
+        expected = 0;
+        foreach (list[i]) expected += list[i];
+
+        compute_add(list, operands, expected);
+    end
+endtask
+
+
+task automatic compute_mul(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
+    logic [7:0] data[];
+    logic [15:0] len_packet;
+    logic [31:0] result;
+
+    data = new[amt_operands*4]; // byte array
+    for (int bytes = 0; bytes < amt_operands; bytes++) begin
+        data[bytes*4+3] = numbers[bytes][31:24];
+        data[bytes*4+2] = numbers[bytes][23:16];
+        data[bytes*4+1] = numbers[bytes][15:8];
+        data[bytes*4] = numbers[bytes][7:0];
+    end
+
+    len_packet = amt_operands*4 +4;
+    send_packet(8'h02, len_packet, data);
+    @(posedge clk_i);
+    receive_result(result);
+
+    if (result === expected) begin
+        $display("PASS");
+    end else begin
+        $display("FAIL");
+        $display("Expected: %0d", $signed(expected));
+        $display("Received: %0d", $signed(result));
+    end
+
+    @(posedge clk_i);
+endtask
+
+
+task automatic fuzz_mul(input int tests);
+    logic [31:0] expected, list[];
+    int operands;
+
+    for (int test = 0; test < tests; test++) begin
+        operands = $urandom_range(2, 5); // arbitrary range of operands
+        list = new[operands];
+
+        foreach (list[i]) begin
+            list[i] = $urandom();
+        end
+
+        expected = 1;
+        foreach (list[i]) expected *= list[i];
+
+        compute_mul(list, operands, expected);
+    end
+endtask
+
+task automatic compute_div(input logic [31:0] numbers[], input int amt_operands, input logic [31:0] expected);
+    logic [7:0] data[];
+    logic [15:0] len_packet;
+    logic [31:0] result;
+
+    data = new[amt_operands*4]; // byte array
+    for (int bytes = 0; bytes < amt_operands; bytes++) begin
+        data[bytes*4+3] = numbers[bytes][31:24];
+        data[bytes*4+2] = numbers[bytes][23:16];
+        data[bytes*4+1] = numbers[bytes][15:8];
+        data[bytes*4] = numbers[bytes][7:0];
+    end
+
+    len_packet = amt_operands*4 +4;
+    send_packet(8'h03, len_packet, data);
+    @(posedge clk_i);
+    receive_result(result);
+
+    if (result === expected) begin
+        $display("PASS");
+        $display("Expected & Received: %0d", $signed(expected));
+    end else begin
+        $display("FAIL");
+        $display("Expected: %0d", $signed(expected));
+        $display("Received: %0d", $signed(result));
+    end
+
+    @(posedge clk_i);
+endtask
+
+task automatic fuzz_div(input int tests);
+    logic [31:0] expected, list[];
+
+    for (int test = 0; test < tests; test++) begin
+        list = new[2]; // only 2 operands
+
+        foreach (list[i]) begin
+            list[i] = $urandom();
+        end
+
+        expected = 0;
+        if (list[1] !== 0) begin
+            list[1] = $urandom(); // gen new number so cant divide by zero
+        end
+
+        expected = $signed(list[0])/$signed(list[1]);
+
+        compute_div(list, 2, expected);
+    end
 endtask
 
 endmodule
