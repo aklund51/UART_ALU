@@ -2,9 +2,9 @@
 module uart_alu_runner;
 
  reg clk_i;
- reg BTN_N = 0;
+ reg BTN_N = 1;
 logic rst_ni;
-logic rx_i = 1;
+logic rx_i;
 
 logic [7:0] s_axis_tdata_sim;
 logic s_axis_tvalid_sim;
@@ -14,7 +14,7 @@ logic m_axis_tready_sim;
 logic tx_o;
 logic s_axis_tready_sim;
 logic [7:0] m_axis_tdata_sim;
-logic m_axis_tvalid;
+logic m_axis_tvalid_sim;
 
  initial begin
      clk_i = 0;
@@ -28,14 +28,14 @@ logic m_axis_tvalid;
  initial begin
      pll_out = 0;
      forever begin
-         #15.873ns; // 31.5MHz
+         #16.393ns; // 30.5MHz
          pll_out = !pll_out;
      end
  end
  assign icebreaker.pll.PLLOUTCORE = pll_out;
 
  icebreaker icebreaker 
- (  .clk_i(pll_out),
+ (  .clk_i(clk_i),
     .rst_ni(!BTN_N),
     .rx_i(rx_i),
     .tx_o(tx_o));
@@ -51,7 +51,7 @@ uart_tx_inst (
     .s_axis_tready(s_axis_tready_sim),
     .txd(rx_i),
     .busy(),
-    .prescale(31500000/76800)
+    .prescale(30500000/76800)
 );
 
 uart_rx
@@ -62,8 +62,8 @@ uart_rx_inst
     .rst(!BTN_N),
     .m_axis_tdata(m_axis_tdata_sim),
     .m_axis_tready(m_axis_tready_sim),
-    .m_axis_tvalid(m_axis_tvalid),
-    .prescale(31500000/76800),
+    .m_axis_tvalid(m_axis_tvalid_sim),
+    .prescale(30500000/76800),
     .rxd(tx_o)
 );
 
@@ -95,6 +95,7 @@ task automatic echo(logic [31:0] data);
     @(negedge s_axis_tready_sim);
     s_axis_tvalid_sim <= 0;
     @(posedge s_axis_tready_sim);
+    //wait(m_axis_tvalid);
     #20
     $display("Test run completed.");
 
@@ -114,7 +115,7 @@ task automatic receive(output logic [7:0] data);
     //wait(m_axis_tready_sim)
     @(posedge pll_out);
     m_axis_tready_sim <= 1'b1;
-    @(negedge m_axis_tvalid);
+    @(negedge m_axis_tvalid_sim);
     data = m_axis_tdata_sim;
     m_axis_tready_sim <= 0;
 endtask

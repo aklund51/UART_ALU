@@ -10,11 +10,11 @@ module icebreaker (
 wire clk_12 = clk_i;
 wire clk_31;
 
-// icepll -i 12 -o 31.5
+// icepll -i 12 -o 30.5
 SB_PLL40_PAD #(
     .FEEDBACK_PATH("SIMPLE"),
     .DIVR(4'd0),
-    .DIVF(7'd83),
+    .DIVF(7'd80),
     .DIVQ(3'd5),
     .FILTER_RANGE(3'd1)
 ) pll (

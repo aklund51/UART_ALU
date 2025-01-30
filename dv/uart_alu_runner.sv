@@ -44,7 +44,7 @@ uart_tx_inst (
     .s_axis_tready(s_axis_tready_sim),
     .txd(rx_i),
     .busy(),
-    .prescale(31500000/76800)
+    .prescale(30500000/76800)
 );
 
 uart_rx
@@ -56,7 +56,7 @@ uart_rx_inst
     .m_axis_tdata(m_axis_tdata_sim),
     .m_axis_tready(m_axis_tready_sim),
     .m_axis_tvalid(m_axis_tvalid_sim),
-    .prescale(31500000/76800),
+    .prescale(30500000/76800),
     .rxd(tx_o)
 );
 
