@@ -34,14 +34,18 @@ logic m_axis_tvalid;
  end
  assign icebreaker.pll.PLLOUTCORE = pll_out;
 
- icebreaker icebreaker (.*);
+ icebreaker icebreaker 
+ (  .clk_i(pll_out),
+    .rst_ni(!BTN_N),
+    .rx_i(rx_i),
+    .tx_o(tx_o));
 
  
 uart_tx #(
     .DATA_WIDTH(8))
 uart_tx_inst (
     .clk(pll_out),
-    .rst(!rst_ni),
+    .rst(!BTN_N),
     .s_axis_tdata(s_axis_tdata_sim),
     .s_axis_tvalid(s_axis_tvalid_sim),
     .s_axis_tready(s_axis_tready_sim),
@@ -55,7 +59,7 @@ uart_rx
 uart_rx_inst
 (
     .clk(pll_out),
-    .rst(!rst_ni),
+    .rst(!BTN_N),
     .m_axis_tdata(m_axis_tdata_sim),
     .m_axis_tready(m_axis_tready_sim),
     .m_axis_tvalid(m_axis_tvalid),
@@ -66,13 +70,13 @@ uart_rx_inst
 
  task automatic reset;
      BTN_N <= 0;
-     @(posedge clk_i);
+     @(posedge pll_out);
      BTN_N <= 1;
  endtask
 
 task automatic echo(logic [31:0] data);
     s_axis_tdata_sim <= 236;
-    repeat(6) @(posedge clk_i);
+    repeat(6) @(posedge pll_out);
     s_axis_tvalid_sim <= 1;
     @(negedge s_axis_tready_sim);
     s_axis_tdata_sim <= 0; //res
@@ -97,9 +101,9 @@ task automatic echo(logic [31:0] data);
 endtask
 
 task automatic transmit(input logic [7:0] data);
-    @(posedge clk_i);
+    @(posedge pll_out);
     //wait(s_axis_tready_sim)
-    @(posedge clk_i);
+    @(posedge pll_out);
     s_axis_tdata_sim <= data;
     s_axis_tvalid_sim <= 1'b1;
     @(negedge s_axis_tready_sim);
@@ -108,7 +112,7 @@ endtask
 
 task automatic receive(output logic [7:0] data);
     //wait(m_axis_tready_sim)
-    @(posedge clk_i);
+    @(posedge pll_out);
     m_axis_tready_sim <= 1'b1;
     @(negedge m_axis_tvalid);
     data = m_axis_tdata_sim;
@@ -155,7 +159,7 @@ task automatic compute_add(input logic [31:0] numbers[], input int amt_operands,
 
     len_packet = amt_operands*4 +4;
     send_packet(8'h01, len_packet, data);
-    @(posedge clk_i);
+    @(posedge pll_out);
     receive_result(result);
 
     if (result === expected) begin
@@ -166,7 +170,7 @@ task automatic compute_add(input logic [31:0] numbers[], input int amt_operands,
         $display("Received: %0d", $signed(result));
     end
 
-    @(posedge clk_i);
+    @(posedge pll_out);
 endtask
 
 task automatic fuzz_add(input int tests);
@@ -204,7 +208,7 @@ task automatic compute_mul(input logic [31:0] numbers[], input int amt_operands,
 
     len_packet = amt_operands*4 +4;
     send_packet(8'h02, len_packet, data);
-    @(posedge clk_i);
+    @(posedge pll_out);
     receive_result(result);
 
     if (result === expected) begin
@@ -215,7 +219,7 @@ task automatic compute_mul(input logic [31:0] numbers[], input int amt_operands,
         $display("Received: %0d", $signed(result));
     end
 
-    @(posedge clk_i);
+    @(posedge pll_out);
 endtask
 
 
@@ -253,7 +257,7 @@ task automatic compute_div(input logic [31:0] numbers[], input int amt_operands,
 
     len_packet = amt_operands*4 +4;
     send_packet(8'h03, len_packet, data);
-    @(posedge clk_i);
+    @(posedge pll_out);
     receive_result(result);
 
     if (result === expected) begin
@@ -265,7 +269,7 @@ task automatic compute_div(input logic [31:0] numbers[], input int amt_operands,
         $display("Received: %0d", $signed(result));
     end
 
-    @(posedge clk_i);
+    @(posedge pll_out);
 endtask
 
 task automatic fuzz_div(input int tests);

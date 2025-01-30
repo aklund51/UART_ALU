@@ -17,7 +17,7 @@ always begin
 
     repeat(1) begin 
         uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
-        //uart_alu_runner.fuzz_mul(7);
+        //uart_alu_runner.fuzz_add(7);
         //uart_alu_runner.fuzz_div(10);
     end
 
