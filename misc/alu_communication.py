@@ -23,7 +23,7 @@ def add32(operands):
 
 def mul32(operands):
     """Prepare a packet to multiply a list of 32-bit signed integers."""
-    data = b''.join(struct.pack('<I', x) for x in operands)
+    data = b''.join(struct.pack('<I', x & 0xFFFFFFFF) for x in operands)
     return create_packet(MUL_OPCODE, data)
 
 def div32(numerator, denominator):
@@ -49,7 +49,7 @@ def receive_result(ser):
     return result
 
 def main():
-    usb_port = '/dev/ttyUSB4'  # Replace with your USB port
+    usb_port = '/dev/cu.usbserial-ib0RDpMt1'  # Replace with your USB port
     baud_rate = 9600
 
     try:
