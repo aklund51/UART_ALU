@@ -16,8 +16,8 @@ always begin
     repeat(3) @(posedge uart_alu_runner.clk_i);
 
     repeat(1) begin 
-        uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
-        //uart_alu_runner.fuzz_add(7);
+        //uart_alu_runner.echo({8'h42, 8'h69, 8'h42, 8'h69});
+        uart_alu_runner.fuzz_mul(2);
         //uart_alu_runner.fuzz_div(10);
     end
 

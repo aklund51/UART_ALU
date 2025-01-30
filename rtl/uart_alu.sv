@@ -63,7 +63,7 @@ module uart_alu
         .m_axis_tready(m_axis_tready),
         .RX_i(RX_i),
         .TX_o(TX_o),
-        .prescale(31500000/76800) // ~ 410.156
+        .prescale(397) 
     );
 
 
@@ -135,7 +135,7 @@ module uart_alu
         curr_num_d = curr_num_q;
         m_axis_tready = 1'b1;
         s_axis_tvalid = 1'b0;
-        s_axis_tdata = 'd0;
+        s_axis_tdata = 'b0;
         mult_ready_i = 1'b0;
         mult_valid_i = 1'b0;
         div_ready_i = 1'b0;
@@ -179,13 +179,19 @@ module uart_alu
 
             MSB_LEN: begin
                 if (m_axis_tvalid) begin
-                    len_packet_d[2*DATA_WIDTH-1:DATA_WIDTH] = m_axis_tdata;
+                    len_packet_d[(2*DATA_WIDTH)-1:DATA_WIDTH] = m_axis_tdata;
                     next_state_d = echo_skip_q ? ECHO : OPERAND_ONE;
                 end
-
+                if(save_state_q == MUL) begin
+                    curr_num_d = 'b1;
+                    acc_d = 'b1;
+                end
+                else begin
+                    acc_d = 0;
+                    curr_num_d = 0;
+                end
                 byte_count_d = 0;
-                acc_d = 0;
-                curr_num_d = 0;
+
             end
 
             ECHO: begin
@@ -241,13 +247,16 @@ module uart_alu
                 acc_d = acc_q + curr_num_q;
 
                 if (len_packet_q == 'd4) begin
+                    byte_count_d = 0;
                     next_state_d = TRANSMIT;
                 end else begin
+                    curr_num_d = 0;
                     next_state_d = OPERAND_TWO;
                 end
             end
 
             MUL: begin
+                mult_valid_i = 1'b1;
                 m_axis_tready = 1'b0;
                 mult_ready_i = 1'b1;
 
@@ -257,12 +266,17 @@ module uart_alu
                 end
 
                 if(mult_valid_o) begin
+                    mult_valid_i = 1'b0;
                     acc_d = mult_result_o;
                     byte_count_d = 0;
 
                     if(len_packet_q == 'd4) begin
+                        mult_valid_i = 1'b0;
+                        mult_ready_i = 1'b0;
                         next_state_d = TRANSMIT;
                     end else begin
+                        mult_valid_i = 1'b0;
+                        mult_ready_i = 1'b0;
                         next_state_d = OPERAND_TWO;
                     end
                 end

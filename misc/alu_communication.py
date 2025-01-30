@@ -18,17 +18,17 @@ def create_packet(opcode, data):
 
 def add32(operands):
     """Prepare a packet to add a list of 32-bit integers."""
-    data = b''.join(struct.pack('>I', x & 0xFFFFFFFF) for x in operands)
+    data = b''.join(struct.pack('<I', x & 0xFFFFFFFF) for x in operands)
     return create_packet(ADD_OPCODE, data)
 
 def mul32(operands):
     """Prepare a packet to multiply a list of 32-bit signed integers."""
-    data = b''.join(struct.pack('>i', x) for x in operands)
+    data = b''.join(struct.pack('<I', x) for x in operands)
     return create_packet(MUL_OPCODE, data)
 
 def div32(numerator, denominator):
     """Prepare a packet to divide two 32-bit signed integers."""
-    data = struct.pack('>ii', numerator, denominator)
+    data = struct.pack('<I', numerator, denominator)
     return create_packet(DIV_OPCODE, data)
 
 def echo(message):
@@ -37,12 +37,16 @@ def echo(message):
     return create_packet(ECHO_OPCODE, data)
 
 def receive_result(ser):
-    """Receive a 32-bit result from the serial port."""
+    """Receive a 4-byte integer result from the serial port."""
     result_bytes = ser.read(4)  # Ensure exactly 4 bytes are read
+    print(f"Raw received bytes: {result_bytes.hex()}")  # Debugging line
+
     if len(result_bytes) < 4:
         print(f"Error: Expected 4 bytes, received {len(result_bytes)} bytes")
         return None
-    return struct.unpack('>i', result_bytes)[0]  # Interpret as signed 32-bit integer
+
+    result = struct.unpack('<I', result_bytes)[0]  # Interpret as signed 32-bit integer
+    return result
 
 def main():
     usb_port = '/dev/cu.usbserial-ib0RDpMt1'  # Replace with your USB port
@@ -53,7 +57,7 @@ def main():
             print(f"Connected to {usb_port} at {baud_rate} baud")
 
             while True:
-                print("\nChoose an operation:")
+                print("\nChoose an operation👹👹👹:")
                 print("1. Add 32-bit integers")
                 print("2. Multiply 32-bit integers")
                 print("3. Divide two 32-bit integers")
@@ -74,8 +78,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received: {result} (0x{result:08X})")
+                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📑: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "2":
@@ -93,8 +97,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received: {result} (0x{result:08X})")
+                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📑: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "3":
@@ -114,8 +118,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received: {result} (0x{result:08X})")
+                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📑: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "4":

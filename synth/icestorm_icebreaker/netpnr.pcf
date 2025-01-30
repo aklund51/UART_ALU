@@ -12,6 +12,6 @@ set_io -nowarn rst_ni      10
 
 #LED
 
-set_io -nowarn LEDG_N     37
+#set_io -nowarn LEDG_N     37
 
 
