@@ -28,7 +28,7 @@ def mul32(operands):
 
 def div32(numerator, denominator):
     """Prepare a packet to divide two 32-bit signed integers."""
-    data = struct.pack('<I', numerator, denominator)
+    data = struct.pack('<ii', numerator, denominator)
     return create_packet(DIV_OPCODE, data)
 
 def echo(message):
@@ -78,8 +78,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📑: {result} (0x{result:08X})")
+                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📫: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "2":
@@ -97,8 +97,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📑: {result} (0x{result:08X})")
+                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📫: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "3":
@@ -118,8 +118,8 @@ def main():
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📫: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📑: {result} (0x{result:08X})")
+                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
+                        print(f"Received📫: {result} (0x{result:08X})")
                         print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
 
                 elif choice == "4":
@@ -130,7 +130,7 @@ def main():
                     print(f"Sent packet: {packet.hex()}") 
                     result = ser.read(len(packet))  # Read the expected echoed message
 
-                    print(f"Echoed: {result.decode('utf-8', errors='ignore')}")
+                    print(f"Echoed📫: {result.decode('utf-8', errors='ignore')}")
 
                 elif choice == "5":
                     print("Exiting...")
