@@ -1,5 +1,4 @@
 import serial
-import time
 import struct
 
 # CONSTANTS
@@ -18,16 +17,19 @@ def create_packet(opcode, data):
 
 def add32(operands):
     """Prepare a packet to add a list of 32-bit integers."""
-    data = b''.join(struct.pack('<I', x & 0xFFFFFFFF) for x in operands)
+    data = b''.join(struct.pack('<i', x) for x in operands)
     return create_packet(ADD_OPCODE, data)
 
 def mul32(operands):
     """Prepare a packet to multiply a list of 32-bit signed integers."""
-    data = b''.join(struct.pack('<I', x & 0xFFFFFFFF) for x in operands)
+    data = b''.join(struct.pack('<i', x) for x in operands)
     return create_packet(MUL_OPCODE, data)
 
 def div32(numerator, denominator):
     """Prepare a packet to divide two 32-bit signed integers."""
+    if denominator == 0:
+        print("❌ Error: Division by zero is not allowed.")
+        return None
     data = struct.pack('<ii', numerator, denominator)
     return create_packet(DIV_OPCODE, data)
 
@@ -39,14 +41,15 @@ def echo(message):
 def receive_result(ser):
     """Receive a 4-byte integer result from the serial port."""
     result_bytes = ser.read(4)  # Ensure exactly 4 bytes are read
-    print(f"Raw received bytes: {result_bytes.hex()}")  # Debugging line
+    print(f"📡 Raw received bytes: {result_bytes.hex()}")  # Debugging line
 
     if len(result_bytes) < 4:
-        print(f"Error: Expected 4 bytes, received {len(result_bytes)} bytes")
+        print(f"❌ Error: Expected 4 bytes, received {len(result_bytes)} bytes")
         return None
 
-    result = struct.unpack('<I', result_bytes)[0]  # Interpret as signed 32-bit integer
-    return result
+    # Unpack as signed 32-bit integer
+    result_signed = struct.unpack('<i', result_bytes)[0]
+    return result_signed
 
 def main():
     usb_port = '/dev/cu.usbserial-ib0RDpMt1'  # Replace with your USB port
@@ -54,10 +57,10 @@ def main():
 
     try:
         with serial.Serial(port=usb_port, baudrate=baud_rate, timeout=1) as ser:
-            print(f"Connected to {usb_port} at {baud_rate} baud")
+            print(f"✅ Connected to {usb_port} at {baud_rate} baud")
 
             while True:
-                print("\nChoose an operation👹👹👹:")
+                print("\nChoose an operation👹:")
                 print("1. Add 32-bit integers")
                 print("2. Multiply 32-bit integers")
                 print("3. Divide two 32-bit integers")
@@ -70,17 +73,18 @@ def main():
                     operands = input("Enter integers to add (separated by spaces): ").strip()
                     operands = list(map(int, operands.split()))
 
-                    expected_result = sum(x & 0xFFFFFFFF for x in operands) & 0xFFFFFFFF  # 32-bit mask
+                    expected_result = sum(operands)
+
                     packet = add32(operands)
                     ser.write(packet)
                     
-                    print(f"Sent packet: {packet.hex()}") 
+                    print(f"📤 Sent packet: {packet.hex()}") 
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📫: {result} (0x{result:08X})")
-                        print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
+                        print(f"📝 Expected: {expected_result} (0x{expected_result & 0xFFFFFFFF:08X})")
+                        print(f"📬 Received: {result} (0x{result & 0xFFFFFFFF:08X})")
+                        print("✅ Match!" if result == expected_result else "❌ Mismatch!")
 
                 elif choice == "2":
                     operands = input("Enter integers to multiply (separated by spaces): ").strip()
@@ -88,18 +92,18 @@ def main():
 
                     expected_result = 1
                     for num in operands:
-                        expected_result = (expected_result * num) & 0xFFFFFFFF  # 32-bit mask
+                        expected_result *= num
 
                     packet = mul32(operands)
                     ser.write(packet)
 
-                    print(f"Sent packet: {packet.hex()}") 
+                    print(f"📤 Sent packet: {packet.hex()}") 
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📫: {result} (0x{result:08X})")
-                        print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
+                        print(f"📝 Expected: {expected_result} (0x{expected_result & 0xFFFFFFFF:08X})")
+                        print(f"📬 Received: {result} (0x{result & 0xFFFFFFFF:08X})")
+                        print("✅ Match!" if result == expected_result else "❌ Mismatch!")
 
                 elif choice == "3":
                     numerator = int(input("Enter the numerator: ").strip())
@@ -114,26 +118,26 @@ def main():
                     packet = div32(numerator, denominator)
                     ser.write(packet)
 
-                    print(f"Sent packet: {packet.hex()}") 
+                    print(f"📤 Sent packet: {packet.hex()}") 
                     result = receive_result(ser)
 
                     if result is not None:
-                        print(f"Expected📑: {expected_result} (0x{expected_result:08X})")
-                        print(f"Received📫: {result} (0x{result:08X})")
-                        print("✅ Result matches expected" if result == expected_result else "❌ Result does NOT match expected")
+                        print(f"📝 Expected: {expected_result} (0x{expected_result & 0xFFFFFFFF:08X})")
+                        print(f"📬 Received: {result} (0x{result & 0xFFFFFFFF:08X})")
+                        print("✅ Match!" if result == expected_result else "❌ Mismatch!")
 
                 elif choice == "4":
                     message = input("Enter message to send: ").strip()
                     packet = echo(message)
                     ser.write(packet)
 
-                    print(f"Sent packet: {packet.hex()}") 
+                    print(f"📤 Sent packet: {packet.hex()}") 
                     result = ser.read(len(packet))  # Read the expected echoed message
 
-                    print(f"Echoed📫: {result.decode('utf-8', errors='ignore')}")
+                    print(f"📬 Echoed: {result.decode('utf-8', errors='ignore')}")
 
                 elif choice == "5":
-                    print("Exiting...")
+                    print("🚪 Exiting...")
                     break
 
                 else:
