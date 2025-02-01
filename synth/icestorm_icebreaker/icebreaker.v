@@ -28,7 +28,7 @@ SB_PLL40_PAD #(
 uart_alu 
 uart_alu_inst(
     .clk_i(clk_31),
-    .reset_i(rst_ni),
+    .reset_i(!rst_ni),
     .RX_i(rx_i),
     .TX_o(tx_o));
 

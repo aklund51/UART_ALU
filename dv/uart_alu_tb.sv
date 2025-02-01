@@ -26,5 +26,4 @@ always begin
     $display( "End simulation." );
     $finish;
 end
-
 endmodule
